@@ -2,7 +2,8 @@
 // problem types, latest resolved fixes, first-visit tour.
 
 import { h, icon } from "../helpers.js";
-import { t, catName, prefs, setPref, ago } from "../i18n.js";
+import { t, catName, prefs, setPref, ago, cityName } from "../i18n.js";
+import { inCity, cityOf } from "../data.js";
 import { CATEGORIES } from "../data.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
@@ -53,7 +54,9 @@ function trackForm() {
     h("div", { class: "track-row" }, input, h("button", { type: "submit", class: "btn btn-light", text: t("Track") })),
     trackErr ? h("p", { id: "trk-err", class: "track-err", role: "alert", text: trackErr }) : null,
     trackHit ? h("a", { class: "track-hit pop", href: `verify.html?id=${trackHit.id}` },
-      h("span", {}, h("b", { text: `${trackHit.id} · ${catName(trackHit.cat)}` }), h("span", { class: "muted", text: ` ${trackHit.area} · ${ago(trackHit.createdAt)}` })),
+      h("span", {}, h("b", { text: `${trackHit.id} · ${catName(trackHit.cat)}` }), h("span", { class: "muted", text: ` ${trackHit.area} · ${ago(trackHit.createdAt)}` }),
+        // Track finds any ID; say so when it is in the other city.
+        inCity(trackHit, store.currentCity()) ? null : h("span", { class: "muted", text: " · " + t("in {city}", { city: cityName(cityOf(trackHit)) }) })),
       badge(trackHit.status), icon("arrow", 18)) : null);
   return form;
 }
@@ -101,7 +104,7 @@ function types() {
 
 /** Latest resolved fixes from the store. */
 function latest() {
-  const done = store.all().filter((c) => c.status === "Verified" && c.afterPhoto).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
+  const done = store.all({ city: store.currentCity() }).filter((c) => c.status === "Verified" && c.afterPhoto).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
   if (!done.length) return null;
   return h("section", { class: "wrap section" },
     h("div", { class: "sec-row" }, h("h2", { class: "sec-title", text: t("Latest proof of fix") }), h("p", { class: "muted", text: t("Every fix here was confirmed by the person who reported it") })),

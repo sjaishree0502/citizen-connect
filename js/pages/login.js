@@ -2,7 +2,7 @@
 // after that the PIN is asked for. This guards a shared device, but it is not real staff security.
 
 import { h, icon, toastNext } from "../helpers.js";
-import { t } from "../i18n.js";
+import { t, prefs } from "../i18n.js";
 import { boot, isOfficer, setOfficer, hasOfficerPin, setOfficerPin, checkOfficerPin } from "../layout.js";
 import { checkPin } from "../validate.js";
 import { field } from "../ui.js";
@@ -13,9 +13,9 @@ const MAX_TRIES = 5, LOCK_MS = 30000;
 let pin = "", pin2 = "", err = "", tries = 0, lockedUntil = 0, busy = false;
 let redraw = () => {};
 
-/** Sign in and go to the dashboard. */
-function enter(message) {
-  setOfficer(true);
+/** Sign in (true, or "demo" for the demo officer) and go to the dashboard. */
+function enter(message, who = true) {
+  setOfficer(who);
   toastNext(message);
   location.href = "officer.html";
 }
@@ -56,19 +56,29 @@ function pinInput(id, value, onInput, auto) {
   return input;
 }
 
+/** Demo mode: sign in without a PIN to show the dashboard with the sample complaints. */
+function demoSignIn() {
+  return h("div", { class: "demo-login" },
+    h("button", { type: "button", class: "btn btn-yellow btn-lg btn-block", onclick: () => enter(t("Signed in as demo officer"), "demo") }, icon("shield", 20), t("Sign in as demo officer")),
+    h("p", { class: "fine", text: t("No PIN needed. It works only while Demo mode is on and shows the sample complaints.") }),
+    h("p", { class: "or", text: t("or use the officer PIN") }));
+}
+
 /** Draw the page. */
 function render(main) {
   const setup = !hasOfficerPin();
+  const demo = prefs().demo;
   const first = pinInput("pin", pin, (v) => { pin = v; }, setup ? "new-password" : "current-password");
   main.replaceChildren(h("div", { class: "wrap page narrow" },
     h("form", { class: "card block login", novalidate: true, onsubmit: submit },
       h("span", { class: "login-ico" }, icon("shield", 28)),
       h("h1", { class: "page-title", text: setup ? t("Set up officer PIN") : t("Officer login") }),
       h("p", { class: "muted", text: setup ? t("No officer PIN is set on this device yet. Choose a 4-digit PIN for the ward team.") : t("For ward teams in Greater Chennai and Avadi.") }),
+      demo ? demoSignIn() : null,
       field({ id: "pin", label: setup ? t("New 4-digit PIN") : t("4-digit PIN"), control: first, error: setup ? "" : err }),
       setup ? field({ id: "pin2", label: t("Type the PIN again"), control: pinInput("pin2", pin2, (v) => { pin2 = v; }, "new-password"), error: err }) : null,
       h("button", { type: "submit", class: "btn btn-primary btn-lg btn-block", text: setup ? t("Save PIN and sign in") : t("Sign in") }),
-      h("p", { class: "fine", text: t("Forgot the PIN? “Erase data on this device” in the footer resets it. A real system would use the Corporation's staff login.") }))));
+      demo ? null : h("p", { class: "fine", text: t("Forgot the PIN? “Erase data on this device” in the footer resets it. A real system would use the Corporation's staff login.") }))));
 }
 
 const draw = boot({ page: "login", render, title: () => t("Officer login") });

@@ -1,20 +1,23 @@
 // layout.js — the parts every page shares: top bar, header, phone menu, footer,
 // language and theme switches, the city menu, and the officer session.
 
-import { h, icon, showPendingToast, toast, readJSON, writeJSON } from "./helpers.js";
-import { t, prefs, setPref } from "./i18n.js";
+import { h, icon, showPendingToast, toast, toastNext, readJSON, writeJSON, param } from "./helpers.js";
+import { t, prefs, setPref, cityName } from "./i18n.js";
 import { CITIES, ZONES } from "./data.js";
 import * as store from "./store.js";
 
 const OFFICER = "cc.officer", PIN = "cc.officerPin.v1", INTRO = "cc.introShown";
 
-/** Is an officer signed in (this browser tab session)? */
+/** Is an officer signed in (this browser tab session)? A demo officer counts only while Demo mode is on. */
 export function isOfficer() {
-  try { return sessionStorage.getItem(OFFICER) === "1"; } catch { return false; }
+  try {
+    const v = sessionStorage.getItem(OFFICER);
+    return v === "1" || (v === "demo" && prefs().demo);
+  } catch { return false; }
 }
-/** Sign the officer in or out. */
+/** Sign the officer in (true, or "demo" for the no-PIN demo officer) or out (false). */
 export function setOfficer(on) {
-  try { on ? sessionStorage.setItem(OFFICER, "1") : sessionStorage.removeItem(OFFICER); } catch { /* ignore */ }
+  try { on ? sessionStorage.setItem(OFFICER, on === "demo" ? "demo" : "1") : sessionStorage.removeItem(OFFICER); } catch { /* ignore */ }
 }
 
 /** Has an officer PIN been set up on this device? */
@@ -57,20 +60,34 @@ function switchGroup(label, items) {
     items.map((it) => h("button", { type: "button", class: "switch-btn", "aria-pressed": it.on ? "true" : "false", "aria-label": it.aria || null, title: it.aria || null, lang: it.lang || null, onclick: it.onclick }, it.content)));
 }
 
-/** City chooser in the top bar (Greater Chennai and Avadi are live). */
+/**
+ * City chooser in the top bar. One live city (Greater Chennai or Avadi) is chosen at a time, and
+ * every list and count shows only its complaints. Cities not live yet just say when they are coming.
+ */
 function cityMenu(rerender) {
+  const chosen = prefs().city;
   const wrap = h("div", { class: "city" });
-  const btn = h("button", { type: "button", class: "city-btn", "aria-haspopup": "listbox", "aria-expanded": "false" }, icon("pin", 16), t("Chennai & Avadi"), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
+  const btn = h("button", { type: "button", class: "city-btn", "aria-haspopup": "listbox", "aria-expanded": "false", "aria-label": t("City: {city}. Change city", { city: cityName(chosen) }) },
+    icon("pin", 16), cityName(chosen), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
   const list = h("ul", { class: "city-list", role: "listbox", "aria-label": t("Choose your city corporation"), hidden: true });
   const tagText = { live: "Live", next: "Coming next", planned: "Planned" };
+  const choose = (c) => {
+    close();
+    if (c.state !== "live") {
+      toast(c.state === "next" ? t("{city} is coming next — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }) : t("{city} is planned — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }), { kind: "info" });
+      return;
+    }
+    if (c.key === chosen) return;
+    setPref("city", c.key);
+    rerender();
+    document.querySelector(".city-btn")?.focus();
+    toast(t("Showing complaints in {city}", { city: t(c.en) }), { kind: "info" });
+  };
   for (const c of CITIES) {
-    list.append(h("li", {}, h("button", { type: "button", role: "option", class: "city-opt" + (c.state === "live" ? " on" : ""), "aria-selected": c.state === "live" ? "true" : "false",
-      onclick: () => {
-        close();
-        if (c.state !== "live") {
-          toast(c.state === "next" ? t("{city} is coming next — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }) : t("{city} is planned — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }), { kind: "info" });
-        }
-      } }, h("span", { text: t(c.en) }), h("span", { class: "tag tag-" + c.state, text: t(tagText[c.state]) }))));
+    const on = c.key === chosen;
+    list.append(h("li", {}, h("button", { type: "button", role: "option", class: "city-opt" + (on ? " on" : "") + (c.state === "live" ? "" : " soon"), "aria-selected": on ? "true" : "false", "aria-disabled": c.state === "live" ? null : "true", onclick: () => choose(c) },
+      h("span", { class: "city-name" }, h("span", { class: "city-tick", "aria-hidden": "true" }, on ? icon("check", 16) : null), t(c.en)),
+      h("span", { class: "tag tag-" + c.state, text: t(tagText[c.state]) }))));
   }
   const open = () => { list.hidden = false; btn.setAttribute("aria-expanded", "true"); list.querySelector("button")?.focus(); document.addEventListener("click", outside, true); document.addEventListener("keydown", esc); };
   const close = () => { list.hidden = true; btn.setAttribute("aria-expanded", "false"); document.removeEventListener("click", outside, true); document.removeEventListener("keydown", esc); };
@@ -89,11 +106,15 @@ function firstIntro() {
   } catch { /* ignore */ }
   return true;
 }
+const firstPage = firstIntro(); // the first page of this visit: logo intro and content fade play once
+let introPending = firstPage;     // only on that page's first draw, never on redraws
 
 /** Logo + name, links home. */
 function brand() {
+  const intro = introPending;
+  introPending = false;
   return h("a", { href: "index.html", class: "brand" },
-    h("img", { src: "img/logo-96.png", alt: "", width: 44, height: 44, class: "brand-logo" + (firstIntro() ? " intro" : "") }),
+    h("img", { src: "img/logo-96.png", alt: "", width: 44, height: 44, class: "brand-logo" + (intro ? " intro" : "") }),
     h("span", { class: "brand-text" },
       h("span", { class: "brand-name" }, "CITIZEN ", h("span", { class: "brand-accent", text: "CONNECT" })),
       h("span", { class: "brand-sub" }, h("span", { lang: "ta", text: "குடிமக்கள் இணைப்பு" }), h("span", { class: "dash", "aria-hidden": "true" }), h("span", { text: "NAMMA OORU FIX" }))));
@@ -104,7 +125,7 @@ function header(active, officerPage, rerender) {
   const p = prefs();
   const dark = document.documentElement.dataset.theme === "dark";
   const left = officerPage
-    ? h("div", { class: "util-left" }, icon("shield", 16), h("span", { class: "util-strong", text: t("Officer mode · Greater Chennai and Avadi") }))
+    ? h("div", { class: "util-left" }, h("span", { class: "util-strong util-officer" }, icon("shield", 16), h("span", { class: "hide-sm", text: t("Officer mode") })), cityMenu(rerender))
     : h("div", { class: "util-left" }, cityMenu(rerender), h("span", { class: "util-muted hide-sm", text: t("Live pilot · Tambaram coming next") }));
   const util = h("div", { class: "util" }, h("div", { class: "wrap util-in" }, left,
     h("div", { class: "util-right" },
@@ -129,7 +150,9 @@ function header(active, officerPage, rerender) {
         h("a", { href: isOfficer() ? "officer.html" : "login.html", class: "nav-btn" + (active === "login" ? " on" : "") }, icon("shield", 16), t("Officer login")));
   const menu = phoneMenu(active, officerPage, need);
   const main = h("header", { class: "head" }, h("div", { class: "wrap head-in" }, brand(), nav, menu.btn), menu.panel);
-  const demo = p.demo ? h("div", { class: "demo-strip", role: "status" }, h("div", { class: "wrap" }, icon("info", 16), t("Demo mode is on — sample photos and location can be used. Turn it off in the footer."))) : null;
+  const demo = p.demo ? h("div", { class: "demo-strip", role: "status" }, h("div", { class: "wrap" }, icon("info", 16),
+    h("span", { class: "demo-text", text: t("Demo mode — showing sample complaints. Your own are safe and come back when you turn it off.") }),
+    h("button", { type: "button", class: "demo-off", onclick: () => setDemo(false, officerPage, rerender), text: t("Turn off") }))) : null;
   return [util, main, demo].filter(Boolean);
 }
 
@@ -161,31 +184,49 @@ function phoneMenu(active, officerPage, need) {
   return { btn, panel };
 }
 
-/** "On this device" tools: demo mode switch (applies at once) and erase with a two-tap confirm on the button. */
-function deviceTools(redrawAll) {
+/**
+ * Turn Demo mode on or off. It swaps between the sample complaints and the user's own, so a page
+ * showing a complaint (or an officer page) that is not in the other set goes to its list instead.
+ */
+function setDemo(on, officerPage, redrawAll) {
+  setPref("demo", on);
+  const msg = on ? t("Demo mode on — showing sample complaints. Your own data is kept safe.") : t("Demo mode off — your own complaints are back");
+  const id = param("id");
+  const away = officerPage && !isOfficer() ? "login.html" : id && !store.get(id) ? (officerPage ? "officer.html" : "my.html") : "";
+  if (away) { toastNext(msg); location.href = away; return; }
+  redrawAll();
+  toast(msg, { kind: "info" });
+}
+
+/** "On this device" tools: demo mode switch (applies at once) and erase (or, in Demo mode, reset the samples) with a two-tap confirm. */
+function deviceTools(officerPage, redrawAll) {
   const demo = prefs().demo;
-  const sw = h("button", { type: "button", class: "tool tool-switch", role: "switch", "aria-checked": demo ? "true" : "false", onclick: () => {
-    setPref("demo", !demo);
-    redrawAll();
-    toast(!demo ? t("Demo mode on — sample photos and location are available") : t("Demo mode off"), { kind: "info" });
-  } },
+  const sw = h("button", { type: "button", class: "tool tool-switch", role: "switch", "aria-checked": demo ? "true" : "false", onclick: () => setDemo(!demo, officerPage, redrawAll) },
     h("span", { class: "tool-ico" }, icon("camera", 18)),
-    h("span", { class: "tool-text" }, h("b", { text: t("Demo mode") }), h("small", { text: t("Sample photos and location for presenting") })),
+    h("span", { class: "tool-text" }, h("b", { text: t("Demo mode") }), h("small", { text: t("Sample complaints, photos and location for presenting") })),
     h("span", { class: "sw", "aria-hidden": "true" }, h("span", { class: "sw-knob" })));
-  const label = h("span", { class: "tool-text" }, h("b", { text: t("Erase data on this device") }), h("small", { text: t("Every complaint, photo and the officer PIN") }));
+  const words = demo
+    ? { title: t("Reset demo data"), sub: t("Puts the sample complaints back. Your own data is not touched."), again: t("Tap again to reset the demo data") }
+    : { title: t("Erase data on this device"), sub: t("Every complaint, photo and the officer PIN"), again: t("Tap again to erase everything") };
+  const label = h("span", { class: "tool-text" }, h("b", { text: words.title }), h("small", { text: words.sub }));
   const erase = h("button", { type: "button", class: "tool tool-danger", onclick: async () => {
-    if (!confirmReset(erase, label)) return;
-    await store.reset();
-    try { localStorage.removeItem(PIN); } catch { /* ignore */ }
-    setOfficer(false);
-    toast(t("All data on this device erased"));
+    if (!confirmReset(erase, label, words)) return;
+    if (demo) {
+      await store.resetDemo();
+      toast(t("Demo data reset — the sample complaints are back"));
+    } else {
+      await store.reset();
+      try { localStorage.removeItem(PIN); } catch { /* ignore */ }
+      setOfficer(false);
+      toast(t("All data on this device erased"));
+    }
     setTimeout(() => { location.href = "index.html"; }, 600);
-  } }, h("span", { class: "tool-ico" }, icon("trash", 18)), label);
+  } }, h("span", { class: "tool-ico" }, icon(demo ? "reopen" : "trash", 18)), label);
   return h("div", { class: "foot-tools" }, h("p", { class: "foot-tools-title", text: t("On this device") }), h("div", { class: "tools" }, sw, erase));
 }
 
 /** Footer: zones, honesty note, school credit, CM helpline, device tools. */
-function footer(redrawAll) {
+function footer(officerPage, redrawAll) {
   return h("footer", { class: "foot" }, h("div", { class: "wrap foot-in" },
     h("div", {},
       h("p", { class: "foot-title", text: t("Covers all 15 zones of Greater Chennai, and Avadi City Corporation") }),
@@ -194,18 +235,18 @@ function footer(redrawAll) {
       h("p", { text: t("Student prototype — not an official Greater Chennai Corporation app.") }),
       h("p", { text: t("For other government services, call 1100 (CM Helpline).") }),
       h("p", { class: "foot-muted" }, t("Made by Class XII students of"), " ", h("b", { text: t("Gandhiji Matriculation School, Avadi") }), " ", t("· Inter-School Hackathon 2026")))),
-    h("div", { class: "wrap" }, deviceTools(redrawAll)));
+    h("div", { class: "wrap" }, deviceTools(officerPage, redrawAll)));
 }
 
 /** Two-tap confirm before wiping: the first tap turns the button red and asks again for 4 seconds. */
 let resetArmed = 0;
-function confirmReset(btn, label) {
+function confirmReset(btn, label, words) {
   const now = Date.now();
   if (now - resetArmed < 4000) { resetArmed = 0; return true; }
   resetArmed = now;
   btn.classList.add("armed");
-  label.firstChild.textContent = t("Tap again to erase everything");
-  setTimeout(() => { btn.classList.remove("armed"); label.firstChild.textContent = t("Erase data on this device"); }, 4000);
+  label.firstChild.textContent = words.again;
+  setTimeout(() => { btn.classList.remove("armed"); label.firstChild.textContent = words.title; }, 4000);
   return false;
 }
 
@@ -229,11 +270,12 @@ export function boot({ page, officer = false, render, title }) {
     skip.textContent = t("Skip to content");
     render(main);
     body.querySelector(".foot")?.remove();
-    body.append(footer(() => draw()));
+    body.append(footer(officer, () => draw()));
   };
-  main.classList.add("enter");
+  if (firstPage) main.classList.add("enter"); // fade content in on the first page of a visit only
   draw();
   setTimeout(() => main.classList.remove("enter"), 600);
+  requestAnimationFrame(() => document.documentElement.classList.add("ready")); // theme transitions on from now
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!prefs().theme) { applyTheme(); draw(true); } });
   showPendingToast();
   registerSW();

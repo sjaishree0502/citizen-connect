@@ -3,14 +3,15 @@
 
 import TA from "./i18n-ta.js";
 import { readJSON, writeJSON, ageParts } from "./helpers.js";
-import { catByKey, ZONES } from "./data.js";
+import { catByKey, cityByKey, ZONES } from "./data.js";
 
 const PREFS = "cc.prefs.v1";
 
-/** Saved preferences: language, theme, list/grid view, tour seen, demo mode. */
+/** Saved preferences: language, theme, list/grid view, tour seen, demo mode, chosen city. */
 export function prefs() {
   const p = readJSON(PREFS, {});
-  return { lang: p.lang === "ta" ? "ta" : "en", theme: p.theme === "dark" || p.theme === "light" ? p.theme : null, view: p.view === "grid" ? "grid" : "list", tour: !!p.tour, demo: !!p.demo };
+  return { lang: p.lang === "ta" ? "ta" : "en", theme: p.theme === "dark" || p.theme === "light" ? p.theme : null, view: p.view === "grid" ? "grid" : "list", tour: !!p.tour, demo: !!p.demo,
+    city: p.city === "avadi" ? "avadi" : "chennai" };
 }
 
 /** Change one preference. */
@@ -39,6 +40,9 @@ export function zoneName(n) {
 
 /** Where a complaint is: "Avadi City Corporation" or "Anna Nagar · Zone 8" (older complaints have no city). */
 export const placeName = (c) => (c.city === "avadi" ? t("Avadi City Corporation") : zoneName(c.zone));
+
+/** Name of the city chosen in the top bar ("Greater Chennai" or "Avadi"). */
+export const cityName = (key = prefs().city) => t(cityByKey(key).en);
 
 /** Status shown to people (the badge text). */
 export function statusLabel(status, forOfficer = false) {

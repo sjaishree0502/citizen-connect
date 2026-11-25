@@ -95,13 +95,13 @@ Open <http://localhost:8080>. The camera, GPS and install only work on `localhos
 ## Tests
 
 ```bash
-npm test               # 50 unit tests, no install needed (Node 18+)
+npm test               # 64 unit tests, no install needed (Node 18+)
 npm install            # once, for the browser test
 npm run test:e2e       # full loop in headless Chrome
 ```
 
-- **Unit tests** (`tests/*.test.js`): every allowed and refused status change and officer follow-up in `js/rules.js`, including the resolution-photo time rule and the fix date; every input check in `js/validate.js`; and the EXIF date reader in `js/photos.js`.
-- **End-to-end test** (`tests/e2e/loop.e2e.mjs`): starts its own local server and drives Chrome with simulated GPS through raise (in Avadi) → officer PIN → start work → follow-up update → work done → reopen → overdue → work done → resolve (old photos refused) → demo mode → erase. It also checks the city menu and that the logo animation doesn't replay. It checks the citizen and officer screens at every step and fails on any console error. It needs Google Chrome; set `CHROME_PATH` if Chrome is not in the default macOS location.
+- **Unit tests** (`tests/*.test.js`): every allowed and refused status change and officer follow-up in `js/rules.js`, including the resolution-photo time rule and the fix date; every input check in `js/validate.js`; the EXIF date reader in `js/photos.js`; and the Demo mode samples in `js/demo-data.js` (every status, real places, photos on disk, each one replays through the rules) and that `js/store.js` keeps them apart from real data and filters by city.
+- **End-to-end test** (`tests/e2e/loop.e2e.mjs`): starts its own local server and drives Chrome with simulated GPS through raise (in Avadi, which switches the chosen city) → officer PIN → start work → follow-up update → work done → reopen → overdue → work done → resolve (old photos refused) → demo mode (sample complaints on every screen, both cities, demo officer, real data untouched both ways, reset) → erase. It also checks the city menu and that the logo animation doesn't replay. It checks the citizen and officer screens at every step and fails on any console error. It needs Google Chrome; set `CHROME_PATH` if Chrome is not in the default macOS location.
 
 ---
 
@@ -125,14 +125,19 @@ The phone camera, GPS and "Install app" need `https`. GitHub Pages gives that fo
 
 Use **one phone or laptop, one browser** (not a private window) for the whole demo, and set the officer PIN beforehand.
 
-**Demo mode:** if you can't take real photos or get GPS indoors, tap **"Presenting without a camera? Use demo photos"** under any photo box (or the **Demo mode** switch in the footer). A yellow banner appears, and the Raise and resolve screens get **Use a demo photo** and **Use demo location** buttons.
+**Demo mode** (footer → **Demo mode**, or **"Presenting without a camera? Use demo photos"** on the Raise screen) shows a ready-made set of **sample complaints**, so every screen has something to show straight away. A yellow banner says so, with a **Turn off** button.
 
-- On **Raise**, a demo photo is a real-world photo of that problem type (pothole, open drain, garbage, …).
-- On **Check & resolve**, it is a real-world photo of the same type **after it was fixed**, picked at random. **Try another demo photo** cycles through them.
-- A demo photo counts as taken just now, so it passes the photo-date check. Every complaint that used one is labelled "Demo mode: a sample photo or location was used".
+- **15 samples in both cities** (CHN-101 to CHN-115) at real places: 2nd Avenue Anna Nagar, Pondy Bazaar, Kodambakkam High Road, LB Road Adyar, Marina Beach, Velachery Main Road, Mylapore near Kapaleeshwarar Temple, Thiruvottiyur High Road, OMR Thoraipakkam, Arcot Road Vadapalani, and in Avadi: Kamaraj Nagar, New Military Road, the bus terminus, Pattabiram and Thirumullaivoyal. They cover every status: new, in progress (with officer updates, one overdue, one with a moved date), work done waiting for the citizen, resolved with before/after photos (on time and late), reopened with a reason, and withdrawn.
+- Dates are counted back from the moment the samples are made (raised 3 hours to 20 days ago), and every status change goes through `rules.js`, so they behave exactly like real complaints. They live in `js/demo-data.js`.
+- **Your own data is safe.** Demo mode keeps its own copy (`cc.demo.*` keys). Turning it on hides your real complaints without changing them; turning it off brings them back. Anything you do in Demo mode (raise, start work, resolve) changes only the samples.
+- **Officer login** offers **Sign in as demo officer** (no PIN) while Demo mode is on. That sign-in stops counting when Demo mode is turned off.
+- The footer's erase button becomes **Reset demo data** (tap twice): it puts the samples back and deletes only photos taken for demo complaints.
+- On **Raise** and on **Check & resolve** of a sample, **Use a demo photo** and **Use demo location** buttons appear. A demo photo is a real-world photo of that problem type (after it was fixed, on Check & resolve; **Try another demo photo** cycles through them). It counts as taken just now, so it passes the photo-date check, and the complaint is labelled "Demo mode: a sample photo or location was used". Real complaints can only be resolved with a real photo.
 - The 48 photos are in `img/demo/` (≈6 MB, loaded only when used, not part of the offline download). They come from Wikimedia Commons under free licences, with authors and licences listed in [`img/demo/CREDITS.md`](img/demo/CREDITS.md).
 
-Turn demo mode off in the footer afterwards.
+**City:** the top-bar city menu chooses **Greater Chennai** or **Avadi** (one at a time). Home counts, Latest proof of fix, My complaints, the "needs your check" badge and the Officer dashboard show only that city's complaints; Track by ID and the complaint pages still open any ID. If a new complaint's location is in the other city, the city switches and the Raise screen says so. Tambaram, Madurai and Coimbatore only say when they are coming.
+
+Turn demo mode off in the footer (or **Turn off** in the banner) afterwards.
 
 | # | Who | Show |
 |---|---|---|
@@ -145,7 +150,7 @@ Turn demo mode off in the footer afterwards.
 | 7 | Citizen | Take a new photo (or demo photo), drag the before/after slider, **Use my location**, **Mark resolved**. It shows "Fixed on time" or "late". |
 | 8 | Extras | Switch to தமிழ், switch the theme, turn Wi-Fi off and reload: it still opens. |
 
-To start again: footer → **Erase data on this device** (tap twice). This deletes every complaint, photo and the officer PIN on that device.
+To start again: footer → **Erase data on this device** (tap twice, with Demo mode off). This deletes every complaint, photo and the officer PIN on that device (the demo samples come back fresh next time). In Demo mode the same button is **Reset demo data**.
 
 ---
 
@@ -157,7 +162,8 @@ To start again: footer → **Erase data on this device** (tap twice). This delet
 | `css/style.css` | Colours (light and dark), layout, components, animations, phone sizes. |
 | `js/rules.js` | **Who can change a complaint to which status, what proof it needs, and officer follow-ups.** Pure functions, unit-tested. |
 | `js/validate.js` | Every input check: photo type and size, location inside Chennai, area text, reason, note, fix date, PIN, ID format. |
-| `js/store.js` | Saves complaints in `localStorage`. Pages never touch storage directly. |
+| `js/store.js` | Saves complaints in `localStorage` (real or, in Demo mode, the demo copy) and filters them by the chosen city. Pages never touch storage directly. |
+| `js/demo-data.js` | The Demo mode sample complaints, built through `rules.js` with dates counted back from now. |
 | `js/photos.js` | Reads when a photo was taken, shrinks it, strips hidden data, and saves it in IndexedDB. |
 | `js/data.js` | The 14 problem types, 15 Chennai zones, the Avadi area, cities, pilot area, demo location, GPS accuracy limit. |
 | `js/helpers.js` | Safe DOM building (text is never inserted as HTML), toasts, distance, dates. |
@@ -180,9 +186,10 @@ There is **no server**. Everything stays in the browser on the device.
 | Data | Stored in | Size |
 |---|---|---|
 | Complaints | `localStorage` · `cc.complaints.v2` | ~1 KB each (~1.5 KB after a reopen) |
+| Demo mode samples | `localStorage` · `cc.demo.complaints.v1` (kept apart from the real ones) | ~16 KB |
 | Photos | IndexedDB · database `citizen-connect` | 45–200 KB each (see below) |
 | Officer PIN | `localStorage` · `cc.officerPin.v1` | Salted SHA-256 hash only |
-| Settings (language, theme, list/grid, tour seen) | `localStorage` · `cc.prefs.v1` | Tiny |
+| Settings (language, theme, list/grid, tour seen, demo mode, city) | `localStorage` · `cc.prefs.v1` | Tiny |
 | Officer sign-in | `sessionStorage` | Ends when the tab closes |
 
 ### How photos are optimized

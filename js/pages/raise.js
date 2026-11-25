@@ -2,7 +2,7 @@
 // Nothing is saved until every check in validate.js passes.
 
 import { h, icon, toast, toastNext, distanceM, reducedMotion } from "../helpers.js";
-import { t, catName, placeName, prefs, setPref } from "../i18n.js";
+import { t, catName, placeName, prefs, setPref, cityName } from "../i18n.js";
 import { CATEGORIES, placeFor, catByKey, DEMO_POINT, demoPhotoPath } from "../data.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
@@ -16,6 +16,7 @@ const form = {
   photo: null, photoURL: "", photoInfo: "", photoTakenAt: null,
   loc: null, area: "", note: "",
   demo: false, // a demo-mode photo or location was used
+  switched: false, // the location was in the other city, so the chosen city was switched
 };
 let showMore = q.get("more") === "1" || CATEGORIES.findIndex((c) => c.key === form.cat) >= 9;
 let tried = false, sending = false, locating = false, photoErr = "", locErr = "";
@@ -78,10 +79,10 @@ function photoStep(err) {
     err ? h("p", { class: "field-err", role: "alert", text: t(err) }) : null);
 }
 
-/** "Use a demo photo" in demo mode, otherwise a small link that turns demo mode on (for presenting). */
+/** "Use a demo photo" in demo mode, otherwise a small link that turns demo mode on (for presenting; the complaint is then saved with the samples). */
 function demoChoice(use) {
   if (prefs().demo) return h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: use }, icon("camera", 18), t("Use a demo photo")));
-  return h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — sample photos and location are available"), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")));
+  return h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — showing sample complaints. Your own data is kept safe."), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")));
 }
 
 /** Demo mode: a real sample photo of the chosen problem type (or a random type), counted as taken now. */
@@ -123,8 +124,11 @@ function setLoc(loc) {
   form.loc = { ...loc, ...placeFor(loc.lat, loc.lng) };
   locErr = "";
   fresh.loc = true;
+  // The spot is in the other city: accept it, and switch the city so the complaint shows up afterwards.
+  form.switched = form.loc.city !== prefs().city;
+  if (form.switched) setPref("city", form.loc.city);
   redraw();
-  toast(t("Location captured · {zone}", { zone: placeName(form.loc) }));
+  toast(form.switched ? t("This spot is in {city} — switched the city to {city}", { city: cityName(form.loc.city) }) : t("Location captured · {zone}", { zone: placeName(form.loc) }));
 }
 
 /** An open complaint of the same type within 50 m, if any. */
@@ -139,7 +143,8 @@ function locStep(err) {
   const body = form.loc
     ? h("div", { class: "loc-ok" + (fresh.loc ? " pop" : "") }, h("div", { class: "loc-row" }, h("b", { text: t("Location captured · inside the pilot area") }),
         h("a", { class: "link", href: `https://www.openstreetmap.org/?mlat=${form.loc.lat}&mlon=${form.loc.lng}#map=18/${form.loc.lat}/${form.loc.lng}`, target: "_blank", rel: "noopener noreferrer", text: t("View on map") })),
-        h("p", { text: `${form.loc.lat.toFixed(4)}, ${form.loc.lng.toFixed(4)} · ${placeName(form.loc)}${form.loc.acc ? " · " + t("accuracy {m} m", { m: form.loc.acc }) : ""}` }))
+        h("p", { text: `${form.loc.lat.toFixed(4)}, ${form.loc.lng.toFixed(4)} · ${placeName(form.loc)}${form.loc.acc ? " · " + t("accuracy {m} m", { m: form.loc.acc }) : ""}` }),
+        form.switched ? h("p", { class: "loc-city" }, icon("info", 16), t("This spot is in {city}, so the city at the top is now {city}.", { city: cityName(form.loc.city) })) : null)
     : h("div", { class: "loc-btns" },
         h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")),
         prefs().demo ? h("button", { type: "button", class: "btn btn-ghost", onclick: () => { form.demo = true; setLoc(DEMO_POINT); }, text: t("Use demo location (Avadi)") }) : null);
@@ -185,7 +190,7 @@ function submitBox() {
 /** Empty everything. */
 function clearForm() {
   if (form.photoURL) URL.revokeObjectURL(form.photoURL);
-  Object.assign(form, { cat: "", photo: null, photoURL: "", photoInfo: "", photoTakenAt: null, loc: null, area: "", note: "", demo: false });
+  Object.assign(form, { cat: "", photo: null, photoURL: "", photoInfo: "", photoTakenAt: null, loc: null, area: "", note: "", demo: false, switched: false });
   tried = false; photoErr = ""; locErr = "";
   redraw();
   toast(t("Form cleared"));

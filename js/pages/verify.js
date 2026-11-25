@@ -3,7 +3,7 @@
 // shown next to the first photo; "Reopen" sends it back to the officer with a reason.
 
 import { h, icon, toast, param, shortDate, distanceM } from "../helpers.js";
-import { t, lang, catName, ago, prefs, setPref } from "../i18n.js";
+import { t, lang, catName, ago, prefs } from "../i18n.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkReason, checkLocation, LIMITS } from "../validate.js";
@@ -125,9 +125,8 @@ function decide(c) {
           res.demo && prefs().demo ? h("button", { type: "button", class: "link-btn", onclick: () => useDemoPhoto(c), text: t("Try another demo photo") }) : null,
           h("button", { type: "button", class: "link-btn", onclick: () => { URL.revokeObjectURL(res.url); Object.assign(res, { blob: null, url: "", takenAt: null, demo: false, path: "" }); redraw(); }, text: t("Retake photo") }))
         : h("label", { for: "after", class: "drop" + (errs.photo ? " err" : "") }, icon("camera", 28), h("b", { text: t("Take a new photo") })),
-      !res.url ? (prefs().demo
-        ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: () => useDemoPhoto(c) }, icon("camera", 18), t("Use a demo photo")))
-        : h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — sample photos and location are available"), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")))) : null,
+      // Demo photos only for the sample complaints: a real complaint is closed only with a real photo.
+      !res.url && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: () => useDemoPhoto(c) }, icon("camera", 18), t("Use a demo photo"))) : null,
       errs.photo ? h("p", { class: "field-err", role: "alert", text: errs.photo }) : null),
     h("div", { class: "field" + (errs.loc ? " has-err" : "") }, h("p", { class: "field-label", text: t("Where did you take it?") }),
       res.loc ? h("p", { class: "match " + (dist <= 50 ? "ok" : "far") }, icon(dist <= 50 ? "check" : "info", 18), t("{d} m from your first pin", { d: dist }) + ` · ${t("accuracy {m} m", { m: res.loc.acc })}`)

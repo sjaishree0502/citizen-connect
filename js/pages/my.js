@@ -1,7 +1,7 @@
 // pages/my.js — My complaints: tabs, search, list/grid, 10 per page, withdraw with Undo.
 
 import { h, icon, toast, param } from "../helpers.js";
-import { t, catName, prefs, setPref } from "../i18n.js";
+import { t, catName, prefs, setPref, cityName } from "../i18n.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { bucket } from "../rules.js";
@@ -15,7 +15,7 @@ let redraw = () => {};
 /** Complaints after tab + search, newest first. */
 function filtered() {
   const q = query.trim().toLowerCase();
-  return store.mine()
+  return store.mine({ city: store.currentCity() })
     .filter((c) => tab === "all" || bucket(c.status) === tab)
     .filter((c) => !q || [c.id, c.area, catName(c.cat), c.status].some((v) => String(v).toLowerCase().includes(q)))
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -47,7 +47,7 @@ function render(main) {
   search.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(() => { query = search.value; page = 1; redraw(true); }, 200); });
 
   main.replaceChildren(h("div", { class: "wrap page" },
-    pageHead(t("My complaints"), t("{total} complaints raised from this browser · {n} need your check. Nothing is closed without your OK.", { total: counts.all, n: counts.check }),
+    pageHead(t("My complaints"), t("{total} complaints in {city} raised from this browser · {n} need your check. Nothing is closed without your OK.", { total: counts.all, city: cityName(), n: counts.check }),
       h("a", { href: "raise.html", class: "btn btn-primary" }, icon("plus", 18), t("Raise another"))),
     h("div", { class: "toolbar" },
       h("div", { class: "tabs", role: "tablist", "aria-label": t("Filter") },
@@ -55,6 +55,8 @@ function render(main) {
       h("div", { class: "toolbar-right" }, h("label", { class: "search" }, icon("search", 18), search), viewToggle(view, (v) => { setPref("view", v); redraw(); }))),
     shown.length
       ? h("div", { class: "items " + (view === "grid" ? "grid" : "list") }, shown.map((c) => complaintItem(c, { isNew: c.id === newId, onWithdraw: withdraw })))
+      : counts.all === 0 && store.mine().length
+        ? empty(t("No complaints in {city}", { city: cityName() }), t("Your other complaints are in the other city. Choose it in the city menu at the top."))
       : counts.all === 0
         ? h("div", {}, empty(t("You have not raised any complaints yet"), t("Spotted a pothole, open drain or broken streetlight? Report it with a photo.")), h("p", { class: "center" }, h("a", { href: "raise.html", class: "btn btn-primary" }, icon("plus", 18), t("Raise a complaint"))))
         : empty(t("No complaints match"), t("Try another filter or search word.")),

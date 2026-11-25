@@ -62,6 +62,18 @@ export async function deletePhoto(key) {
   });
 }
 
+/** Delete several photos by key (used by "Reset demo data", which removes only demo photos). */
+export async function deletePhotos(keys) {
+  if (!keys.length) return;
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const tx = db.transaction(STORE, "readwrite");
+    for (const k of keys) tx.objectStore(STORE).delete(k);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+}
+
 /** Delete every stored photo (used by "Erase data on this device"). */
 export async function clearPhotos() {
   const db = await openDB();

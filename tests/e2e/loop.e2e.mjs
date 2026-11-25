@@ -1,6 +1,7 @@
 // End-to-end test of the whole complaint loop in headless Chrome:
 // raise (Avadi) → officer PIN → start work (fix date) → follow-up update → work done → citizen reopens
-// → overdue → work done → citizen resolves with a new photo → erase. Also the logo intro and city menu.
+// → overdue → work done → citizen resolves with a new photo → demo mode (sample complaints, demo officer,
+// kept apart from the real data, reset) → erase. Also the logo intro and city menu.
 // Run: npm install && npm run test:e2e   (set CHROME_PATH if Chrome is not in the default macOS place)
 
 import { createServer } from "node:http";
@@ -57,6 +58,18 @@ const click = async (label, sel = "button") => {
   if (!ok) throw new Error(`No ${sel} with "${label}"`);
   await sleep(400);
 };
+/** Click something that opens another page, and wait for that page. */
+const clickAway = async (label, sel = "button") => {
+  await Promise.all([page.waitForNavigation({ waitUntil: "networkidle0" }), page.evaluate((s, l) => [...document.querySelectorAll(s)].find((e) => e.textContent.includes(l))?.click(), sel, label)]);
+  await sleep(300);
+};
+/** Choose a city in the top-bar menu. */
+const chooseCity = async (name) => {
+  await page.click(".city-btn");
+  await page.evaluate((n) => [...document.querySelectorAll(".city-opt")].find((e) => e.textContent.startsWith(n))?.click(), name);
+  await sleep(400);
+};
+const cityShown = () => page.$eval(".city-btn", (e) => e.textContent.replace("▾", "").trim());
 const upload = async (sel, file) => { await (await page.$(sel)).uploadFile(file); await sleep(800); };
 const type = async (sel, value) => { await page.click(sel, { clickCount: 3 }); await page.type(sel, value); };
 
@@ -80,6 +93,14 @@ try {
   await page.click(".city-btn");
   const cities = await page.$$eval(".city-opt", (els) => els.map((e) => e.innerText.replace(/\s+/g, " ")));
   check(cities.includes("Avadi Live") && cities.includes("Greater Chennai Live") && cities.includes("Tambaram Coming next"), "city menu: Chennai and Avadi live, Tambaram next");
+  const selected = await page.$$eval('.city-opt[aria-selected="true"]', (els) => els.map((e) => e.textContent));
+  check((await cityShown()) === "Greater Chennai" && selected.length === 1 && selected[0].startsWith("Greater Chennai"), "one city is chosen: Greater Chennai by default");
+  await page.evaluate(() => [...document.querySelectorAll(".city-opt")].find((e) => e.textContent.startsWith("Tambaram")).click());
+  await sleep(300);
+  check((await cityShown()) === "Greater Chennai" && (await has("Tambaram is coming next")), "a city that is not live cannot be chosen");
+  await chooseCity("Avadi");
+  check((await cityShown()) === "Avadi" && (await page.$$eval('.city-opt[aria-selected="true"]', (els) => els.length)) === 1, "choosing Avadi shows it in the top bar");
+  await chooseCity("Greater Chennai");
   await go("my.html");
   check((await page.$(".brand-logo.intro")) === null, "logo intro does not replay on the next page");
   check(await has("You have not raised any complaints yet"), "My complaints shows the first-time empty state");
@@ -91,10 +112,11 @@ try {
   await click("Use my location");
   await sleep(600);
   check(await has("Avadi City Corporation"), "an Avadi pin is labelled Avadi City Corporation");
+  check((await has("This spot is in Avadi, so the city at the top is now Avadi.")) && (await cityShown()) === "Avadi", "an Avadi spot while Greater Chennai is chosen switches the city to Avadi, and says so");
   await type("#area", "Kamaraj Nagar, Avadi");
   await click("Submit complaint");
   await page.waitForNavigation({ waitUntil: "networkidle0" });
-  check(page.url().includes("my.html?new=CHN-001") && (await has("CHN-001")), "saved as CHN-001 and listed");
+  check(page.url().includes("my.html?new=CHN-001") && (await has("CHN-001")), "saved as CHN-001 and listed (in Avadi)");
   check(await has("Waiting for an officer to start work"), "[Submitted] citizen is told what happens next");
 
   console.log("Officer signs in and starts work");
@@ -186,36 +208,110 @@ try {
   await go("index.html");
   check(await has("Latest proof of fix"), "home shows the resolved fix");
 
-  console.log("Demo mode (presenting without a camera or GPS)");
+  console.log("Demo mode: sample complaints, kept apart from the real ones");
+  const realSaved = await page.evaluate(() => localStorage.getItem("cc.complaints.v2"));
+  const statNums = () => page.$$eval(".stats .stat-n", (els) => els.map((e) => e.textContent).join(","));
   check(!(await has("Use a demo photo")), "demo buttons are hidden while demo mode is off");
+  check(await has("Erase data on this device"), "footer offers to erase data while demo mode is off");
   await page.click(".tool-switch");
   await sleep(500);
-  check((await has("Demo mode is on")) && (await page.$eval(".tool-switch", (e) => e.getAttribute("aria-checked"))) === "true", "demo switch turns on at once and the banner shows");
+  check((await has("Demo mode — showing sample complaints. Your own are safe")) && (await page.$eval(".tool-switch", (e) => e.getAttribute("aria-checked"))) === "true", "demo switch turns on at once and the banner says the user's data is safe");
+  check((await statNums()) === "1,1,1,1,1" && (await has("CHN-103 · Pothole")) && !(await has("CHN-001")), "[Home · Avadi] counts and proof of fix come from the Avadi samples, not the real complaint");
+  await chooseCity("Greater Chennai");
+  check((await statNums()) === "1,3,1,3,1", "[Home · Chennai] switching city changes the counts: 1 new, 3 in progress, 1 work done, 3 resolved, 1 reopened");
+  check((await has("Latest proof of fix")) && (await has("CHN-104 · Streetlight off")) && !(await has("CHN-103")), "[Home · Chennai] latest proof of fix shows Chennai samples only");
+  await type("#trk", "CHN-105");
+  await click("Track");
+  check(await has("CHN-105 · Water pipe leak") && (await has("in Avadi")), "track by ID still finds an Avadi complaint and says where it is");
+  check(await has("Reset demo data"), "footer offers 'Reset demo data' instead of erase");
+  await go("my.html");
+  check((await has("10 complaints in Greater Chennai raised from this browser · 1 need your check")) && (await has("All · 10")) && (await has("Open · 5")) && (await has("Closed · 4")), "[My complaints · Chennai] 10 samples across the tabs");
+  check((await has("CHN-115")) && (await has("Overdue")) && (await has("Work done — check it")) && !(await has("CHN-001")) && !(await has("CHN-114")), "[My complaints · Chennai] samples shown (overdue, work done); Avadi and real complaints hidden");
+  check((await page.$eval(".count", (e) => e.textContent).catch(() => "")) === "1", "nav badge counts the sample to check in this city");
+  await chooseCity("Avadi");
+  check((await has("All · 5")) && (await has("CHN-114")) && !(await has("CHN-115")), "[My complaints · Avadi] switching city shows the 5 Avadi samples");
+  await go("verify.html?id=CHN-106");
+  check((await has("Officer update")) && (await has("Road cut done and the new pipe laid")) && (await has("Fix promised by")) && (await has("LB Road, Adyar")), "[In progress] sample has officer updates and a moved fix date");
+  await go("verify.html?id=CHN-101");
+  check((await page.$(".cmp")) !== null && (await has("Fixed on time")) && (await has("Location matched")), "[Resolved] sample shows before/after, on time, location matched");
+  await go("verify.html?id=CHN-102");
+  check(await has("days late"), "[Resolved] another sample was fixed late");
+  await go("verify.html?id=CHN-105");
+  check((await has("Reopened · sent back to the officer")) && (await has("Avadi City Corporation")), "[Reopened] sample in Avadi with the citizen's reason");
+
+  console.log("Demo officer (no PIN)");
+  await go("officer.html");
+  await clickAway("Sign out");
+  await go("login.html");
+  await clickAway("Sign in as demo officer");
+  check(page.url().endsWith("officer.html") && (await page.evaluate(() => sessionStorage.getItem("cc.officer"))) === "demo", "demo officer signs in without a PIN");
+  const ids = () => page.$$eval(".orow:not(.ohead) .o-id b", (els) => els.map((e) => e.textContent));
+  const avadiIds = await ids();
+  check(avadiIds[0] === "CHN-105" && avadiIds.length === 5 && !avadiIds.includes("CHN-001") && (await statNums()) === "1,1,1,1,1", "[Dashboard · Avadi] 5 Avadi samples, reopened first, no real complaint");
+  await chooseCity("Greater Chennai");
+  const chennaiIds = await ids();
+  check(chennaiIds[0] === "CHN-107" && chennaiIds.length === 9 && !chennaiIds.includes("CHN-113") && !chennaiIds.includes("CHN-105"), "[Dashboard · Chennai] switching city: 9 Chennai samples, reopened first, withdrawn hidden");
+  check((await statNums()) === "1,3,1,3,1" && (await has("Overdue")) && (await has("Officer mode")), "[Dashboard · Chennai] counts and the overdue flag");
+
+  console.log("Raise and resolve a new complaint in demo mode");
   await go("raise.html");
   await page.click(".cat");
   await click("Use a demo photo");
   await sleep(600);
   await click("Use demo location (Avadi)");
+  check((await cityShown()) === "Avadi", "the demo location (Avadi) switches the city from Greater Chennai to Avadi");
   await type("#area", "Demo street, Avadi");
   await click("Submit complaint");
   await page.waitForNavigation({ waitUntil: "networkidle0" });
-  check(await has("CHN-002"), "complaint raised with a demo photo and location");
-  await go("update.html?id=CHN-002");
+  check(page.url().includes("new=CHN-116") && (await has("CHN-116")), "complaint raised with a demo photo and location continues after the samples (CHN-116) and is listed in Avadi");
+  await go("update.html?id=CHN-116");
   await click("Today");
   await click("Start work");
   await type("#onote", "Cleared during the demo");
   await click("Work done");
-  await go("verify.html?id=CHN-002");
+  await go("verify.html?id=CHN-116");
   await click("Use a demo photo");
   await sleep(600);
   check((await page.$(".cmp")) !== null, "demo photo passes the date check and shows next to the first photo");
   await click("Use demo location");
   await click("Mark resolved");
   await sleep(5500);
-  check((await has("CHN-002 is closed with your photo")) && (await has("Demo mode: a sample photo or location was used.")), "resolved in demo mode, and labelled as demo");
+  check((await has("CHN-116 is closed with your photo")) && (await has("Demo mode: a sample photo or location was used.")), "resolved in demo mode, and labelled as demo");
+  const demoPhotoKey = await page.evaluate(() => JSON.parse(localStorage.getItem("cc.demo.complaints.v1")).find((c) => c.id === "CHN-116").beforePhoto.slice(4));
+  check(await page.evaluate(() => localStorage.getItem("cc.complaints.v2")) === realSaved, "real complaints unchanged by everything done in demo mode");
+
+  console.log("Demo mode off: only the real data again");
+  await go("officer.html");
+  await clickAway("Demo mode", ".tool-switch");
+  check(page.url().endsWith("login.html") && !(await has("Sign in as demo officer")) && (await has("4-digit PIN")), "the demo officer is signed out when demo mode is turned off; PIN login is back");
+  check(!(await has("showing sample complaints")), "demo banner is gone");
+  await go("my.html");
+  check((await has("CHN-001")) && !/CHN-1\d\d/.test(await text()), "[My complaints · Avadi] only the real complaint");
+  await chooseCity("Greater Chennai");
+  check(await has("No complaints in Greater Chennai"), "[My complaints · Chennai] no real complaints there, and it says the others are in the other city");
+  await chooseCity("Avadi");
+  await go("index.html");
+  check((await statNums()) === "0,0,0,1,0" && (await has("CHN-001")) && !/CHN-1\d\d/.test(await text()), "[Home] real counts and proof of fix only");
+  await go("verify.html?id=CHN-001");
+  check((await has("CHN-001 is closed with your photo")) && !(await has("Demo mode:")), "the real complaint is as it was");
+
+  console.log("Reset demo data");
+  await clickAway("Demo mode", ".tool-switch"); // from a real complaint's page: it is not in the samples, so go to the list
+  check(page.url().endsWith("my.html") && (await has("CHN-116")), "turning demo on from a real complaint opens My complaints; demo changes were kept");
+  const tapReset = () => page.$eval(".tool-danger", (b) => b.click());
+  await tapReset();
+  check(await has("Tap again to reset the demo data"), "first tap on reset asks again");
+  await tapReset();
+  await sleep(1500);
+  await go("my.html");
+  check((await has("All · 5")) && !(await has("CHN-116")), "reset puts back the 5 Avadi samples, without the new one");
+  const photoKeys = await page.evaluate(() => new Promise((res) => { const r = indexedDB.open("citizen-connect"); r.onsuccess = () => { const q = r.result.transaction("photos").objectStore("photos").getAllKeys(); q.onsuccess = () => res(q.result); }; }));
+  const realKeys = JSON.parse(realSaved).flatMap((c) => [c.beforePhoto, c.afterPhoto]).filter(Boolean).map((r) => r.slice(4));
+  check(!photoKeys.includes(demoPhotoKey) && realKeys.every((k) => photoKeys.includes(k)), "reset deletes only demo photos; real photos are kept");
+  check(await page.evaluate(() => localStorage.getItem("cc.complaints.v2")) === realSaved, "reset does not touch real complaints");
   await page.click(".tool-switch");
   await sleep(500);
-  check(!(await has("Demo mode is on")), "demo mode turns off again");
+  check(!(await has("showing sample complaints")) && (await has("CHN-001")), "demo mode turns off again");
 
   console.log("Erase data");
   const tapErase = () => page.$eval(".tool-danger", (b) => b.click()); // a toast may cover the footer
@@ -226,6 +322,7 @@ try {
   await go("my.html");
   check(await has("You have not raised any complaints yet"), "complaints erased");
   check((await page.evaluate(() => localStorage.getItem("cc.officerPin.v1"))) === null, "officer PIN erased");
+  check((await page.evaluate(() => localStorage.getItem("cc.demo.complaints.v1"))) === null, "the demo copy is erased too (fresh samples next time)");
 
   check(errors.length === 0, "no console errors" + (errors.length ? ": " + errors.join(" | ") : ""));
 } catch (e) {

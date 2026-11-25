@@ -1,7 +1,7 @@
 // pages/officer.js — Officer dashboard: counts that filter, reopened and oldest first, list/grid.
 
 import { h, icon } from "../helpers.js";
-import { t, catName, age, prefs, setPref } from "../i18n.js";
+import { t, catName, age, prefs, setPref, cityName } from "../i18n.js";
 import { boot, isOfficer } from "../layout.js";
 import * as store from "../store.js";
 import { officerOrder } from "../rules.js";
@@ -15,7 +15,7 @@ let redraw = () => {};
 
 /** Complaints for the chosen filter in officer order. */
 function rows() {
-  return store.all().filter((c) => c.status !== "Withdrawn").filter((c) => filter === "all" || c.status === filter).sort(officerOrder);
+  return store.all({ city: store.currentCity() }).filter((c) => c.status !== "Withdrawn").filter((c) => filter === "all" || c.status === filter).sort(officerOrder);
 }
 
 /** Next step text for a complaint. */
@@ -64,7 +64,7 @@ function render(main) {
       h("p", { class: "muted", text: filter === "all" ? t("Showing all complaints") : t("Showing: {s}", { s: badge(filter, true).textContent }) }),
       h("div", { class: "toolbar-right" }, filter !== "all" ? h("button", { type: "button", class: "btn btn-sm btn-ghost", onclick: () => { filter = "all"; redraw(); }, text: t("Show all") }) : null, viewToggle(view, (v) => { setPref("view", v); redraw(); }))),
     h("p", { class: "rule" }, icon("info", 16), t("You follow up; only the citizen closes a complaint, with a new photo at the spot")),
-    !shown.length ? empty(n.total ? t("No complaints with this status.") : t("No complaints yet"), n.total ? "" : t("Complaints raised on this device will appear here."))
+    !shown.length ? empty(n.total ? t("No complaints with this status.") : t("No complaints in {city} yet", { city: cityName() }), n.total ? "" : t("Complaints raised on this device will appear here."))
       : view === "grid" ? h("div", { class: "items grid" }, shown.map(cardEl))
       : h("div", { class: "otable", role: "table", "aria-label": t("Complaints") },
           h("div", { class: "orow ohead", role: "row" }, [t("Complaint"), t("Area"), t("Age"), t("Status"), t("Action")].map((x) => h("span", { role: "columnheader", text: x }))),

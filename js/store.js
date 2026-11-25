@@ -1,11 +1,30 @@
 // store.js — complaints saved in localStorage. Pages read and change complaints only through here.
+// Demo mode uses its own set of sample complaints under other keys, so the user's real
+// complaints are never changed or shown while it is on.
 
 import { readJSON, writeJSON } from "./helpers.js";
 import { applyMove, applyUpdate, bucket } from "./rules.js";
-import { clearPhotos } from "./photos.js";
+import { clearPhotos, deletePhotos } from "./photos.js";
+import { prefs } from "./i18n.js";
+import { demoComplaints, DEMO_NEXT_ID } from "./demo-data.js";
+import { inCity } from "./data.js";
 
-const KEY = "cc.complaints.v2", NEXT = "cc.nextId.v2";
+const REAL = { list: "cc.complaints.v2", next: "cc.nextId.v2" };
+const DEMO = { list: "cc.demo.complaints.v1", next: "cc.demo.nextId.v1" };
 const FIRST_ID = 1;
+
+/** Put fresh sample complaints in the demo keys. */
+function seedDemo() {
+  writeJSON(DEMO.list, demoComplaints());
+  writeJSON(DEMO.next, DEMO_NEXT_ID);
+}
+
+/** The storage keys in use right now (checked on every call: Demo mode can change without a reload). */
+function keys() {
+  if (!prefs().demo) return REAL;
+  try { if (localStorage.getItem(DEMO.list) === null) seedDemo(); } catch { /* ignore */ }
+  return DEMO;
+}
 
 /** One-time cleanup: v1 storage held the old demo complaints, so drop it (and its photos). */
 (function dropDemoData() {
@@ -22,15 +41,18 @@ function looksValid(c) {
   return c && typeof c.id === "string" && /^CHN-\d{3,5}$/.test(c.id) && typeof c.status === "string" && typeof c.createdAt === "string";
 }
 
-/** All complaints on this device (empty on the first visit). */
-export function all() {
-  const list = readJSON(KEY, []);
-  return Array.isArray(list) ? list.filter(looksValid) : [];
+/** The city chosen in the top bar ("chennai" or "avadi"): lists and counts show only its complaints. */
+export const currentCity = () => prefs().city;
+
+/** All complaints on this device (empty on the first visit); with { city } only that city's. */
+export function all({ city = null } = {}) {
+  const list = readJSON(keys().list, []);
+  return Array.isArray(list) ? list.filter((c) => looksValid(c) && (!city || inCity(c, city))) : [];
 }
 
 /** Save the full list; returns false if the browser refused (storage full). */
 function saveAll(list) {
-  return writeJSON(KEY, list);
+  return writeJSON(keys().list, list);
 }
 
 /** One complaint by ID (case-insensitive), or null. */
@@ -39,15 +61,16 @@ export function get(id) {
   return all().find((c) => c.id === want) || null;
 }
 
-/** Complaints raised from this browser. */
-export function mine() {
-  return all().filter((c) => c.mine);
+/** Complaints raised from this browser; with { city } only that city's. */
+export function mine({ city = null } = {}) {
+  return all({ city }).filter((c) => c.mine);
 }
 
 /** Next free ID like CHN-001. */
 function takeId() {
-  const n = Math.max(Number(readJSON(NEXT, FIRST_ID)) || FIRST_ID, FIRST_ID);
-  writeJSON(NEXT, n + 1);
+  const { next } = keys();
+  const n = Math.max(Number(readJSON(next, FIRST_ID)) || FIRST_ID, FIRST_ID);
+  writeJSON(next, n + 1);
   return "CHN-" + String(n).padStart(3, "0");
 }
 
@@ -94,8 +117,8 @@ export function restore(previous) {
   if (i >= 0) { list[i] = previous; saveAll(list); }
 }
 
-/** Counts used by Home, My complaints and the Officer dashboard. */
-export function counts(list = all()) {
+/** Counts used by Home and the Officer dashboard (the chosen city's). */
+export function counts(list = all({ city: currentCity() })) {
   const by = (s) => list.filter((c) => c.status === s).length;
   return {
     total: list.length,
@@ -104,8 +127,8 @@ export function counts(list = all()) {
   };
 }
 
-/** Counts for the citizen's tabs. */
-export function myTabs(list = mine()) {
+/** Counts for the citizen's tabs and the "needs your check" badge (the chosen city's). */
+export function myTabs(list = mine({ city: currentCity() })) {
   return {
     all: list.length,
     check: list.filter((c) => bucket(c.status) === "check").length,
@@ -114,8 +137,17 @@ export function myTabs(list = mine()) {
   };
 }
 
-/** Erase every complaint and photo on this device. */
+/** Erase every complaint and photo on this device (the demo samples come back fresh next time). */
 export async function reset() {
-  try { localStorage.removeItem(KEY); localStorage.removeItem(NEXT); } catch { /* ignore */ }
+  try { for (const k of [REAL.list, REAL.next, DEMO.list, DEMO.next]) localStorage.removeItem(k); } catch { /* ignore */ }
   await clearPhotos().catch(() => {});
+}
+
+/** Demo mode: put the sample complaints back. Deletes only photos taken for demo complaints; real data is not touched. */
+export async function resetDemo() {
+  const list = readJSON(DEMO.list, []);
+  const refs = (Array.isArray(list) ? list : []).flatMap((c) => [c && c.beforePhoto, c && c.afterPhoto, ...((c && c.history) || []).map((e) => e && e.photo)]);
+  const ids = [...new Set(refs.filter((r) => typeof r === "string" && r.startsWith("idb:")).map((r) => r.slice(4)))];
+  await deletePhotos(ids).catch(() => {});
+  seedDemo();
 }

@@ -63,13 +63,21 @@ export function placeFor(lat, lng) {
   return { city: "chennai", zone: zoneFor(lat, lng).n };
 }
 
+/** City corporations in the top-bar menu. Only "live" ones can be chosen; `key` matches a complaint's `city`. */
 export const CITIES = [
-  { en: "Greater Chennai", state: "live" },
-  { en: "Avadi", state: "live" },
-  { en: "Tambaram", state: "next" },
-  { en: "Madurai", state: "planned" },
-  { en: "Coimbatore", state: "planned" },
+  { key: "chennai", en: "Greater Chennai", state: "live" },
+  { key: "avadi", en: "Avadi", state: "live" },
+  { key: "tambaram", en: "Tambaram", state: "next" },
+  { key: "madurai", en: "Madurai", state: "planned" },
+  { key: "coimbatore", en: "Coimbatore", state: "planned" },
 ];
+export const cityByKey = (k) => CITIES.find((c) => c.key === k && c.state === "live") || CITIES[0];
+
+/** Which city a complaint belongs to (older complaints have no city: they are Chennai's). */
+export const cityOf = (c) => (c && c.city === "avadi" ? "avadi" : "chennai");
+
+/** Is this complaint in that city? */
+export const inCity = (c, city) => cityOf(c) === city;
 
 /**
  * Demo mode: real-world sample photos in img/demo (credits in img/demo/CREDITS.md), as
