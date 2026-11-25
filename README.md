@@ -13,6 +13,8 @@ Plain HTML, CSS and JavaScript, with no framework and no build step. It works in
 > Student prototype by Class XII, Gandhiji Matriculation School, Avadi — Inter-School Hackathon 2026.
 > Not an official Greater Chennai Corporation app.
 
+**Live app:** <https://sjaishree0502.github.io/citizen-connect/> (after GitHub Pages is switched on — see [Put it online](#put-it-online-and-install-it)) · **Code:** <https://github.com/sjaishree0502/citizen-connect>
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/home.png" width="200" alt="Home screen"><br><sub>Home</sub></td>
@@ -26,15 +28,38 @@ Plain HTML, CSS and JavaScript, with no framework and no build step. It works in
 
 ## Contents
 
+- [Features](#features)
 - [The complaint loop](#the-complaint-loop)
+- [Tech stack](#tech-stack)
 - [Run it on your computer](#run-it-on-your-computer)
 - [Tests](#tests)
 - [Put it online and install it](#put-it-online-and-install-it)
+- [Demo mode and cities](#demo-mode-and-cities)
 - [Hackathon demo script](#hackathon-demo-script)
 - [Folder map](#folder-map)
 - [Data, storage and photos](#data-storage-and-photos)
 - [Security and privacy](#security-and-privacy)
 - [Limits and next steps](#limits-and-next-steps)
+
+---
+
+## Features
+
+| Feature | What it does | Why |
+|---|---|---|
+| **Only the citizen closes** | The officer can only say "Work done"; the citizen marks it Resolved | The person who reported it decides |
+| **Photo + GPS on every complaint** | 14 problem types; location must be inside Greater Chennai or Avadi | The ward team can find the exact spot |
+| **Promised fix date + Overdue** | The officer must pick a date to start work; both sides see "Overdue" if it passes | Makes the officer accountable |
+| **Officer updates** | Every update (and date change) appears on the citizen's timeline | The citizen is never left guessing |
+| **Proof of fix** | New photo at the spot, newer than "Work done", with GPS (±150 m) | Old gallery photos can't fake a fix |
+| **Before / after slider** | First photo and resolution photo side by side | Proof you can see in one second |
+| **Reopen with a reason** | "Not fixed — reopen" sends it back; reopened ones are listed first | The officer knows what is still wrong |
+| **Fixed on time / late** | Compares "Work done" with the promised date | A fair record for good officers |
+| **Duplicate warning** | Warns if the same problem was reported within 50 m | Avoids repeat complaints |
+| **Two cities** | Switch between Greater Chennai (15 zones) and Avadi | Each city sees its own complaints |
+| **English + தமிழ், light / dark** | One-tap switches; phone menu (☰) | Usable by everyone, day or night |
+| **Installable, works offline** | PWA: add to home screen; opens without internet | No app store; weak networks are fine |
+| **Demo mode** | Sample complaints, demo photos and location, demo officer — clearly labelled | Present indoors without a camera or GPS |
 
 ---
 
@@ -80,6 +105,25 @@ The officer never uploads photos and can never close a complaint.
 
 ---
 
+## Tech stack
+
+| Part | Technology | Why |
+|---|---|---|
+| Screens | HTML, CSS, JavaScript (ES modules) — **no framework, no build step** | Fast on cheap phones; everyone in the team can read it |
+| Complaints | `localStorage` in the browser (~1 KB each) | Free, works offline, no server needed for the prototype |
+| Photos | IndexedDB (browser database) | Holds photos too big for localStorage |
+| Photo shrinking + privacy | Canvas → 1200 px JPEG (7 MB → ~45–200 KB), re-encoding removes hidden GPS (EXIF) | Small and private |
+| Photo date check | Reads the EXIF "date taken" (or file time) before shrinking | Blocks old photos |
+| Location | Geolocation API (GPS + accuracy in metres) | Proves where the photo was taken |
+| Offline + install | Service Worker (network-first) + Web App Manifest (PWA) | One code for Android, iPhone and PC |
+| Officer PIN | Web Crypto SHA-256 with a salt; 5 wrong tries → 30 s pause | The real PIN is never stored |
+| Security | Content-Security-Policy; typed text is never inserted as HTML | Only our own code can run |
+| Languages | `i18n.js` + `i18n-ta.js` (English is the key, Tamil the value) | Tamil for everyone in Chennai and Avadi |
+| Tests | Node test runner (64 unit tests) + Puppeteer/Chrome end-to-end test | Every rule and the full loop checked automatically |
+| Code + hosting | GitHub + GitHub Pages (https) | Free, and phones need https for camera/GPS |
+
+---
+
 ## Run it on your computer
 
 ```bash
@@ -109,10 +153,11 @@ npm run test:e2e       # full loop in headless Chrome
 
 The phone camera, GPS and "Install app" need `https`. GitHub Pages gives that for free.
 
-1. In this repository: **Settings → Pages → Build and deployment → Deploy from a branch**, choose `main` and `/ (root)`, then **Save**.
-   *GitHub Pages on a **private** repository needs a paid GitHub plan. On a free account, make the repository public first.*
-2. After about a minute, open `https://sjaishree0502.github.io/citizen-connect/`.
-3. Install it:
+1. **Push the code** to <https://github.com/sjaishree0502/citizen-connect> (branch `main`).
+2. **Make the repository public** (Settings → General → Danger Zone → Change visibility), or use a paid GitHub plan — GitHub Pages on a private repository needs one.
+3. **Switch on Pages:** Settings → Pages → Build and deployment → **Deploy from a branch** → `main` and `/ (root)` → **Save**.
+4. After about a minute, open **<https://sjaishree0502.github.io/citizen-connect/>**.
+5. Install it:
    - **Android (Chrome):** menu → **Install app**. Long-press the icon for "Raise a complaint" and "My complaints" shortcuts.
    - **iPhone (Safari):** Share → **Add to Home Screen**.
    - **Mac or PC (Chrome or Edge):** the install icon at the right end of the address bar.
@@ -121,9 +166,7 @@ The phone camera, GPS and "Install app" need `https`. GitHub Pages gives that fo
 
 ---
 
-## Hackathon demo script
-
-Use **one phone or laptop, one browser** (not a private window) for the whole demo, and set the officer PIN beforehand.
+## Demo mode and cities
 
 **Demo mode** (footer → **Demo mode**, or **"Presenting without a camera? Use demo photos"** on the Raise screen) shows a ready-made set of **sample complaints**, so every screen has something to show straight away. A yellow banner says so, with a **Turn off** button.
 
@@ -139,18 +182,28 @@ Use **one phone or laptop, one browser** (not a private window) for the whole de
 
 Turn demo mode off in the footer (or **Turn off** in the banner) afterwards.
 
-| # | Who | Show |
-|---|---|---|
-| 1 | Citizen | Raise a complaint with a photo and location (or the demo buttons). |
-| 2 | Officer | Open it, tap **Directions to the spot**, pick **In 3 days**, **Start work**. The citizen now sees the promised date. |
-| 3 | Officer | **Post update** ("Material ordered…", maybe a new date). Show it appearing on the citizen's screen. Then **Work done** with a note. |
-| 4 | Citizen | **Check & resolve**: try **Mark resolved** with no photo → blocked. Try an old gallery photo → refused (demo mode off). |
-| 5 | Citizen | **Not fixed — reopen** with a reason. The officer has to start again with a new date. |
-| 6 | Officer | Start again, **Work done**. |
-| 7 | Citizen | Take a new photo (or demo photo), drag the before/after slider, **Use my location**, **Mark resolved**. It shows "Fixed on time" or "late". |
-| 8 | Extras | Switch to தமிழ், switch the theme, turn Wi-Fi off and reload: it still opens. |
+---
 
-To start again: footer → **Erase data on this device** (tap twice, with Demo mode off). This deletes every complaint, photo and the officer PIN on that device (the demo samples come back fresh next time). In Demo mode the same button is **Reset demo data**.
+## Hackathon demo script
+
+Use **one phone or laptop, one browser** (not a private window). Before you start: footer → **Demo mode on** → **Reset demo data** for fresh samples; city **Greater Chennai**; keep the internet on (demo photos load from the server).
+
+| # | Who | Show | Say |
+|---|---|---|---|
+| 1 | Citizen | Home (live counts) → **Raise a complaint** → Pothole → **Use a demo photo** → **Use demo location** → area → submit | "Photo and location are required." |
+| 2 | Officer | ☰ → **Officer** → **Sign in as demo officer** → open it → **In 3 days** → **Start work** | "The officer must promise a date." |
+| 3 | Officer | Type an update → **Post update**, then a note → **Work done** | "See — no Close button for the officer." |
+| 4 | Citizen | **My complaints** → **Check & resolve** → **Mark resolved** with no photo → blocked | "No new photo, no closing." |
+| 5 | Citizen | **Not fixed — reopen** → reason → **Send back to officer** | "Not fixed? Send it back with a reason." |
+| 6 | Officer | Reopened is on top → new date → **Start work** → **Work done** | "Reopened goes to the top." |
+| 7 | Citizen | **Use a demo photo** → drag the **slider** → **Use demo location** → **Mark resolved** → "Fixed on time" | "Closed by the citizen, with proof." |
+| 8 | Extras | City → **Avadi** (every screen changes) · தமிழ் · dark theme | "Each city sees its own complaints." |
+
+**Short on time?** Do 1, 2, 3, 4, 7 and just *say* reopen. **Using a real phone outdoors?** Turn Demo mode off and use the camera and **Use my location** instead.
+
+**If something goes wrong:** GPS weak → **Use demo location** · no camera → **Use a demo photo** · officer asks for a PIN → turn Demo mode on, then **Sign in as demo officer** · complaint not in the list → check the **city** in the top bar · "Could not load the demo photo" → keep the internet on.
+
+To start again: footer → **Reset demo data** (Demo mode on) or **Erase data on this device** (Demo mode off; deletes every real complaint, photo and the officer PIN on that device).
 
 ---
 
