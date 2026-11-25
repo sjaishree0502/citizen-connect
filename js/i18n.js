@@ -7,10 +7,10 @@ import { catByKey, ZONES } from "./data.js";
 
 const PREFS = "cc.prefs.v1";
 
-/** Saved preferences: language, theme, list/grid view, tour seen. */
+/** Saved preferences: language, theme, list/grid view, tour seen, demo mode. */
 export function prefs() {
   const p = readJSON(PREFS, {});
-  return { lang: p.lang === "ta" ? "ta" : "en", theme: p.theme === "dark" || p.theme === "light" ? p.theme : null, view: p.view === "grid" ? "grid" : "list", tour: !!p.tour };
+  return { lang: p.lang === "ta" ? "ta" : "en", theme: p.theme === "dark" || p.theme === "light" ? p.theme : null, view: p.view === "grid" ? "grid" : "list", tour: !!p.tour, demo: !!p.demo };
 }
 
 /** Change one preference. */

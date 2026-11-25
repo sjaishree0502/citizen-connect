@@ -128,7 +128,8 @@ function render(main) {
         h("div", { class: "card block facts" },
           h("p", {}, h("b", { text: t("Location:") }), ` ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}` + (c.acc ? ` · ${t("accuracy {m} m", { m: c.acc })}` : "")),
           h("p", {}, h("a", { class: "btn btn-primary", href: `https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`, target: "_blank", rel: "noopener noreferrer" }, icon("pin", 18), t("Directions to the spot"))),
-          c.note ? h("p", {}, h("b", { text: t("Citizen's description:") }), " " + c.note) : null)),
+          c.note ? h("p", {}, h("b", { text: t("Citizen's description:") }), " " + c.note) : null,
+          c.demo ? h("p", { class: "muted", text: t("Demo mode: a sample photo or location was used.") }) : null)),
       h("div", { class: "col" }, action(c), h("section", { class: "card block" }, h("h2", { class: "block-title", text: t("What happened") }), timeline(c))))));
 }
 

@@ -90,6 +90,22 @@ export function setImg(img, ref) {
   photoURL(ref).then((u) => { if (u) img.src = u; });
 }
 
+/**
+ * Demo mode: turn one of the app's own pictures into a JPEG "photo taken now", so the loop can be
+ * shown without a camera. Complaints that use it are marked as demo.
+ */
+export async function demoPhoto(path) {
+  const img = new Image();
+  img.src = path;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = 1200; canvas.height = 800;
+  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.8));
+  if (!blob) throw new Error("demo-photo");
+  return { blob, width: canvas.width, height: canvas.height, takenAt: Date.now() };
+}
+
 /** Decode an image file to check it is a real picture and get its size. */
 function decode(file) {
   return new Promise((resolve) => {

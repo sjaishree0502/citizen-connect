@@ -128,7 +128,8 @@ function header(active, officerPage, rerender) {
         tab("my.html", "my", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
         h("a", { href: isOfficer() ? "officer.html" : "login.html", class: "nav-btn" + (active === "login" ? " on" : "") }, icon("shield", 16), t("Officer login")));
   const main = h("header", { class: "head" }, h("div", { class: "wrap head-in" }, brand(), nav));
-  return [util, main];
+  const demo = p.demo ? h("div", { class: "demo-strip", role: "status" }, h("div", { class: "wrap" }, icon("info", 16), t("Demo mode is on — sample photos and location can be used. Turn it off in the footer."))) : null;
+  return [util, main, demo].filter(Boolean);
 }
 
 /** Bottom tab bar for phones. */
@@ -161,7 +162,12 @@ function footer() {
         setOfficer(false);
         toast(t("All data on this device erased"));
         setTimeout(() => { location.href = "index.html"; }, 600);
-      } }, t("Erase data on this device")))));
+      } }, t("Erase data on this device")),
+      h("button", { type: "button", class: "link-btn", "aria-pressed": prefs().demo ? "true" : "false", onclick: () => {
+        setPref("demo", !prefs().demo);
+        toast(prefs().demo ? t("Demo mode on — sample photos and location are available") : t("Demo mode off"), { kind: "info" });
+        setTimeout(() => location.reload(), 600);
+      } }, prefs().demo ? t("Demo mode: on (turn off)") : t("Demo mode: off (turn on for presenting)")))));
 }
 
 /** Ask before wiping (uses a simple built-in prompt-free two-tap confirm). */

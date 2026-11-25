@@ -1,12 +1,12 @@
 # Citizen Connect — Namma Ooru Fix
 
-A civic-complaint web app for Chennai with **proof of fix**.
+A civic-complaint web app for Greater Chennai and Avadi with **proof of fix**.
 
 Most complaint systems let the department close a complaint by itself. In Citizen Connect:
 
 1. A citizen raises a street problem with a **photo** and a **GPS location**.
-2. The officer promises a **fix date**, and can only mark the complaint fixed with a **new after-photo taken at the spot**.
-3. **Only the citizen** can close it, after comparing the before and after photos. If it isn't really fixed, they reopen it with a reason.
+2. The officer **follows up**: promises a **fix date**, posts updates the citizen can see, and says when the work is done.
+3. **Only the citizen** can close it, by going to the spot and taking a **new photo**, which is kept next to the first one. If it isn't really fixed, they reopen it with a reason.
 
 Plain HTML, CSS and JavaScript, with no framework and no build step. It works in English and Tamil, in light and dark themes, installs on a phone as an app (PWA), and works offline after the first visit.
 
@@ -17,8 +17,8 @@ Plain HTML, CSS and JavaScript, with no framework and no build step. It works in
   <tr>
     <td align="center"><img src="docs/screenshots/home.png" width="200" alt="Home screen"><br><sub>Home</sub></td>
     <td align="center"><img src="docs/screenshots/raise.png" width="200" alt="Raise a complaint"><br><sub>Raise a complaint</sub></td>
-    <td align="center"><img src="docs/screenshots/officer-mark-fixed.png" width="200" alt="Officer marks it fixed"><br><sub>Officer: mark fixed</sub></td>
-    <td align="center"><img src="docs/screenshots/check-the-fix.png" width="200" alt="Citizen checks the fix"><br><sub>Citizen: check the fix</sub></td>
+    <td align="center"><img src="docs/screenshots/officer-follow-up.png" width="200" alt="Officer follows up"><br><sub>Officer: follow up</sub></td>
+    <td align="center"><img src="docs/screenshots/check-and-resolve.png" width="200" alt="Citizen checks and resolves"><br><sub>Citizen: check &amp; resolve</sub></td>
   </tr>
 </table>
 
@@ -46,35 +46,37 @@ stateDiagram-v2
     [*] --> Submitted: Citizen raises it (photo + GPS)
     Submitted --> Withdrawn: Citizen withdraws
     Submitted --> InProgress: Officer starts work (promises a fix date)
-    InProgress --> Fixed: Officer marks fixed (new after-photo + GPS + note)
-    Fixed --> Verified: Citizen confirms the fix
-    Fixed --> Reopened: Citizen reopens (with a reason)
+    InProgress --> InProgress: Officer posts an update (can move the date)
+    InProgress --> WorkDone: Officer says work is done (note)
+    InProgress --> Resolved: Citizen resolves early (new photo + GPS)
+    WorkDone --> Resolved: Citizen resolves (new photo + GPS)
+    WorkDone --> Reopened: Citizen reopens (with a reason)
     Reopened --> InProgress: Officer starts again (new fix date)
-    Verified --> [*]
+    Resolved --> [*]
     Withdrawn --> [*]
     InProgress: In progress
+    WorkDone: Work done
 ```
 
-Every change goes through one file, [`js/rules.js`](js/rules.js), which decides **who** may make it and **what proof** it needs. Anything not listed there is refused.
+Every change goes through one file, [`js/rules.js`](js/rules.js), which decides **who** may make it and **what proof** it needs. Anything not listed there is refused. (In the code, "Work done" is the status `Fixed` and "Resolved" is `Verified`.)
 
 | Status | Citizen sees | Officer sees |
 |---|---|---|
 | Submitted | "Waiting for an officer to start work" | **Start work**: must choose the date the fix will be done by |
-| In progress | "Fix promised by Thu, 27 Nov", or red **Overdue** if the date passed | **Mark fixed** form, with a directions link to the spot |
-| Fixed | **Check the fix**: before/after slider, distance from the pin, photo time, on time or late | "Waiting for citizen" |
+| In progress | "Fix promised by Thu, 27 Nov" (red **Overdue** if it passed) and every officer update; can resolve early with a new photo | **Follow up**: post an update (optionally with a new date) or tap **Work done** |
+| Work done | **Check & resolve**: take a new photo at the spot and **Mark resolved**, or **Not fixed — reopen** | "Waiting for the citizen" |
 | Reopened | "Waiting for the officer to start again" | Listed first, with the citizen's reason |
-| Verified / Withdrawn | Closed | Closed |
+| Resolved / Withdrawn | Closed, with "Fixed on time" or "late" | Closed |
 
-### What the officer must provide to mark a complaint fixed
+### What the citizen must provide to resolve a complaint
 
 | Proof | Checked by |
 |---|---|
-| An after-photo | `rules.js` refuses the move without one |
-| Taken **after** the complaint was raised (or after the last reopen) | The camera's EXIF date, or the file's time, is read before the photo is re-encoded. Older photos are refused. |
-| GPS location at the spot | Must be inside Greater Chennai, with accuracy of ±150 m or better. The citizen sees the distance from their pin. |
-| A note of what was done | 5–200 characters |
+| A new photo | `rules.js` refuses "Resolved" without one |
+| Taken **after** the officer said the work is done (or after the complaint was raised / last reopened) | The camera's EXIF date, or the file's time, is read before the photo is re-encoded. Older photos are refused. |
+| GPS location where it was taken | Must be inside Greater Chennai or Avadi, with accuracy of ±150 m or better. The distance from the first pin is shown. |
 
-When a citizen reopens a complaint, the old after-photo stays in the timeline as evidence, and the officer has to post a new one.
+The officer never uploads photos and can never close a complaint.
 
 ---
 
@@ -93,13 +95,13 @@ Open <http://localhost:8080>. The camera, GPS and install only work on `localhos
 ## Tests
 
 ```bash
-npm test               # 41 unit tests, no install needed (Node 18+)
+npm test               # 50 unit tests, no install needed (Node 18+)
 npm install            # once, for the browser test
 npm run test:e2e       # full loop in headless Chrome
 ```
 
-- **Unit tests** (`tests/*.test.js`): every allowed and refused status change in `js/rules.js`, including the after-photo time rule and the fix date; every input check in `js/validate.js`; and the EXIF date reader in `js/photos.js`.
-- **End-to-end test** (`tests/e2e/loop.e2e.mjs`): starts its own local server and drives Chrome with simulated GPS through raise → officer PIN → start work → blocked "Mark fixed" without a photo → old photo refused → fixed → reopened → overdue → fixed again → verified → erase. It checks the citizen and officer screens at every step and fails on any console error. It needs Google Chrome; set `CHROME_PATH` if Chrome is not in the default macOS location.
+- **Unit tests** (`tests/*.test.js`): every allowed and refused status change and officer follow-up in `js/rules.js`, including the resolution-photo time rule and the fix date; every input check in `js/validate.js`; and the EXIF date reader in `js/photos.js`.
+- **End-to-end test** (`tests/e2e/loop.e2e.mjs`): starts its own local server and drives Chrome with simulated GPS through raise (in Avadi) → officer PIN → start work → follow-up update → work done → reopen → overdue → work done → resolve (old photos refused) → demo mode → erase. It also checks the city menu and that the logo animation doesn't replay. It checks the citizen and officer screens at every step and fails on any console error. It needs Google Chrome; set `CHROME_PATH` if Chrome is not in the default macOS location.
 
 ---
 
@@ -121,20 +123,20 @@ The phone camera, GPS and "Install app" need `https`. GitHub Pages gives that fo
 
 ## Hackathon demo script
 
-Use **one phone, one browser** (not a private window) for the whole demo, and set the officer PIN beforehand.
+Use **one phone or laptop, one browser** (not a private window) for the whole demo, and set the officer PIN beforehand.
+
+**Demo mode:** if you can't take real photos or get GPS indoors, turn on **Demo mode** in the footer. A yellow banner appears, and the Raise and resolve screens get **Use a demo photo** and **Use demo location** buttons. A demo photo counts as taken just now, so it passes the photo-date check. Every complaint that used one is labelled "Demo mode: a sample photo or location was used". Turn it off in the footer afterwards.
 
 | # | Who | Show |
 |---|---|---|
-| 1 | Citizen | Raise a complaint with a real photo and **Use my location**. |
-| 2 | Officer | Open it, tap **Directions to the spot**, pick **In 3 days**, **Start work**. Point out that the citizen now sees the promised date. |
-| 3 | Officer | Tap **Mark fixed** with no photo → blocked. Pick an old gallery photo → refused. |
-| 4 | Officer | Take a fresh after-photo, **Use my location**, write a note, **Mark fixed**. |
-| 5 | Citizen | **Check the fix**: drag the before/after slider, show "Location matched — 12 m from your pin". |
-| 6 | Citizen | **No, reopen it** with a reason. The officer must fix it again with a new photo; the old one stays in the timeline. |
-| 7 | Citizen | **Yes, it's fixed** → closed, with "Fixed on time" or "late". |
+| 1 | Citizen | Raise a complaint with a photo and location (or the demo buttons). |
+| 2 | Officer | Open it, tap **Directions to the spot**, pick **In 3 days**, **Start work**. The citizen now sees the promised date. |
+| 3 | Officer | **Post update** ("Material ordered…", maybe a new date). Show it appearing on the citizen's screen. Then **Work done** with a note. |
+| 4 | Citizen | **Check & resolve**: try **Mark resolved** with no photo → blocked. Try an old gallery photo → refused (demo mode off). |
+| 5 | Citizen | **Not fixed — reopen** with a reason. The officer has to start again with a new date. |
+| 6 | Officer | Start again, **Work done**. |
+| 7 | Citizen | Take a new photo (or demo photo), drag the before/after slider, **Use my location**, **Mark resolved**. It shows "Fixed on time" or "late". |
 | 8 | Extras | Switch to தமிழ், switch the theme, turn Wi-Fi off and reload: it still opens. |
-
-**Rehearse at the venue:** indoor GPS can be weak, and "Mark fixed" refuses accuracy worse than ±150 m. Stand near a window. The location must be inside Greater Chennai.
 
 To start again: footer → **Erase data on this device** (tap twice). This deletes every complaint, photo and the officer PIN on that device.
 
@@ -146,16 +148,16 @@ To start again: footer → **Erase data on this device** (tap twice). This delet
 |---|---|
 | `index.html` … `update.html` | One page per screen. Each loads one script from `js/pages/`. |
 | `css/style.css` | Colours (light and dark), layout, components, animations, phone sizes. |
-| `js/rules.js` | **Who can change a complaint to which status, and what proof it needs.** Pure functions, unit-tested. |
+| `js/rules.js` | **Who can change a complaint to which status, what proof it needs, and officer follow-ups.** Pure functions, unit-tested. |
 | `js/validate.js` | Every input check: photo type and size, location inside Chennai, area text, reason, note, fix date, PIN, ID format. |
 | `js/store.js` | Saves complaints in `localStorage`. Pages never touch storage directly. |
 | `js/photos.js` | Reads when a photo was taken, shrinks it, strips hidden data, and saves it in IndexedDB. |
-| `js/data.js` | The 14 problem types, 15 Chennai zones, cities, pilot area, GPS accuracy limit. |
+| `js/data.js` | The 14 problem types, 15 Chennai zones, the Avadi area, cities, pilot area, demo location, GPS accuracy limit. |
 | `js/helpers.js` | Safe DOM building (text is never inserted as HTML), toasts, distance, dates. |
 | `js/i18n.js`, `js/i18n-ta.js` | English and Tamil. **The Tamil is a draft: get it checked by our Tamil teacher.** |
 | `js/layout.js` | Header, footer, phone tab bar, language and theme switches, city menu, officer session and PIN. |
 | `js/ui.js` | Shared parts: status badges, complaint cards, fix-date lines, pager, before/after compare, timeline. |
-| `js/pages/*.js` | One script per page: home, raise, my, verify (citizen); login, officer, update (officer). |
+| `js/pages/*.js` | One script per page: home, raise, my, verify (citizen: check & resolve); login, officer, update (officer: follow up). |
 | `manifest.json`, `service-worker.js`, `img/icons/` | Install as an app (including an Android "maskable" icon) and work offline. |
 | `tools-build-sw.py` | Regenerates `service-worker.js` with the current file list and version. |
 | `tests/` | Unit tests and the end-to-end test. |
@@ -177,10 +179,10 @@ There is **no server**. Everything stays in the browser on the device.
 
 ### How photos are optimized
 
-Every photo, from the citizen or the officer, goes through `preparePhoto()` in `js/photos.js`:
+Every photo (the citizen's first photo and their resolution photo) goes through `preparePhoto()` in `js/photos.js`:
 
 1. **Checked:** JPG, PNG or WebP only, under 15 MB, and it must decode as a real picture at least 200 × 200 px.
-2. **Time read:** the camera's EXIF "date taken" and the file time, for the after-photo rule.
+2. **Time read:** the camera's EXIF "date taken" and the file time, for the resolution-photo rule.
 3. **Shrunk:** longest side 1200 px, which is still sharp enough to compare before and after.
 4. **Re-encoded as JPEG at quality 0.8.** This also **removes hidden data** such as the camera's GPS tag, so a citizen's home location isn't leaked through the photo.
 5. **Saved as a Blob in IndexedDB.** Complaints store only a reference like `idb:p-…`.
@@ -224,6 +226,6 @@ WebP was also tested. It was smaller for smooth scenes but **larger** for detail
 |---|---|
 | Data lives on one device, so citizen and officer use the same phone | Keep the same `rules.js` and save to a Corporation server, so each person uses their own phone |
 | Officer PIN per device | Use the Corporation's staff login and assign complaints by ward |
-| A complaint marked fixed waits for the citizen forever | Auto-close after a few days without a reply, and escalate overdue fixes |
+| A complaint marked "work done" waits for the citizen forever | Auto-close after a few days without a reply, and escalate overdue fixes |
 | No notifications | Send SMS or push messages when the status changes |
 | Tamil text is a draft | Have the Tamil teacher check it |

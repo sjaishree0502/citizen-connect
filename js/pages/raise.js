@@ -2,12 +2,12 @@
 // Nothing is saved until every check in validate.js passes.
 
 import { h, icon, toast, toastNext, distanceM, reducedMotion } from "../helpers.js";
-import { t, catName, placeName } from "../i18n.js";
-import { CATEGORIES, placeFor } from "../data.js";
+import { t, catName, placeName, prefs } from "../i18n.js";
+import { CATEGORIES, placeFor, catByKey, DEMO_POINT } from "../data.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkRaise, checkLocation, LIMITS } from "../validate.js";
-import { preparePhoto, putPhoto, deletePhoto, isQuotaError } from "../photos.js";
+import { preparePhoto, putPhoto, deletePhoto, isQuotaError, demoPhoto } from "../photos.js";
 import { field, pageHead } from "../ui.js";
 
 const q = new URLSearchParams(location.search);
@@ -15,6 +15,7 @@ const form = {
   cat: CATEGORIES.some((c) => c.key === q.get("cat")) ? q.get("cat") : "",
   photo: null, photoURL: "", photoInfo: "", photoTakenAt: null,
   loc: null, area: "", note: "",
+  demo: false, // a demo-mode photo or location was used
 };
 let showMore = q.get("more") === "1" || CATEGORIES.findIndex((c) => c.key === form.cat) >= 9;
 let tried = false, sending = false, locating = false, photoErr = "", locErr = "";
@@ -71,7 +72,19 @@ function photoStep(err) {
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-photo", "aria-labelledby": "h-photo" },
     h("h2", { id: "h-photo", class: "block-title", text: t("2 · Add a photo") }), input, body,
     h("p", { class: "field-hint", text: t("Keep people’s faces and vehicle number plates out of the photo.") }),
+    !form.photo && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: useDemoPhoto }, icon("camera", 18), t("Use a demo photo"))) : null,
     err ? h("p", { class: "field-err", role: "alert", text: t(err) }) : null);
+}
+
+/** Demo mode: a sample photo of the chosen problem type (or a random one), counted as taken now. */
+async function useDemoPhoto() {
+  const cat = form.cat ? catByKey(form.cat) : CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1))];
+  try {
+    const p = await demoPhoto(`img/scenes/${cat.scene}.svg`);
+    form.demo = true;
+    setPhoto(p.blob, `${t("Demo photo")} · ${t(cat.en)} · ${Math.round(p.blob.size / 1024)} KB`, p.takenAt);
+    toast(t("Demo photo added"));
+  } catch { toast(t("Could not load the demo photo"), { kind: "err" }); }
 }
 
 /** Keep the chosen photo in memory until submit. */
@@ -117,7 +130,8 @@ function locStep(err) {
         h("a", { class: "link", href: `https://www.openstreetmap.org/?mlat=${form.loc.lat}&mlon=${form.loc.lng}#map=18/${form.loc.lat}/${form.loc.lng}`, target: "_blank", rel: "noopener noreferrer", text: t("View on map") })),
         h("p", { text: `${form.loc.lat.toFixed(4)}, ${form.loc.lng.toFixed(4)} · ${placeName(form.loc)}${form.loc.acc ? " · " + t("accuracy {m} m", { m: form.loc.acc }) : ""}` }))
     : h("div", { class: "loc-btns" },
-        h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")));
+        h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")),
+        prefs().demo ? h("button", { type: "button", class: "btn btn-ghost", onclick: () => { form.demo = true; setLoc(DEMO_POINT); }, text: t("Use demo location (Avadi)") }) : null);
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-loc", "aria-labelledby": "h-loc" },
     h("h2", { id: "h-loc", class: "block-title", text: t("3 · Where is it?") }), body,
     near ? h("div", { class: "notice" }, icon("info", 18), h("p", {}, h("b", { text: t("Similar complaint nearby:") }), " ", t("{id} ({cat}) is {m} m away and already being handled. You can still submit if this is a different spot.", { id: near.id, cat: catName(near.cat), m: distanceM(near.lat, near.lng, form.loc.lat, form.loc.lng) }))) : null,
@@ -160,7 +174,7 @@ function submitBox() {
 /** Empty everything. */
 function clearForm() {
   if (form.photoURL) URL.revokeObjectURL(form.photoURL);
-  Object.assign(form, { cat: "", photo: null, photoURL: "", photoInfo: "", photoTakenAt: null, loc: null, area: "", note: "" });
+  Object.assign(form, { cat: "", photo: null, photoURL: "", photoInfo: "", photoTakenAt: null, loc: null, area: "", note: "", demo: false });
   tried = false; photoErr = ""; locErr = "";
   redraw();
   toast(t("Form cleared"));
@@ -183,7 +197,7 @@ async function submit(e) {
   const key = "p-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   try {
     await putPhoto(key, form.photo);
-    const c = store.create({ cat: form.cat, photoRef: "idb:" + key, photoTakenAt: form.photoTakenAt, lat: form.loc.lat, lng: form.loc.lng, acc: form.loc.acc, area: form.area, note: form.note, city: form.loc.city, zone: form.loc.zone });
+    const c = store.create({ cat: form.cat, photoRef: "idb:" + key, photoTakenAt: form.photoTakenAt, lat: form.loc.lat, lng: form.loc.lng, acc: form.loc.acc, area: form.area, note: form.note, city: form.loc.city, zone: form.loc.zone, demo: form.demo });
     toastNext(t("Complaint {id} registered — it is at the top of your list", { id: c.id }));
     setTimeout(() => { location.href = `my.html?new=${encodeURIComponent(c.id)}`; }, reducedMotion() ? 0 : 700);
   } catch (err) {

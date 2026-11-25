@@ -353,5 +353,17 @@ export default {
  "This place is outside the pilot area (Greater Chennai and Avadi).": "இந்த இடம் முன்னோட்டப் பகுதிக்கு (பெருநகர சென்னை மற்றும் ஆவடி) வெளியே உள்ளது.",
  "Enter the 4-digit PIN.": "4 இலக்க PIN-ஐ உள்ளிடவும்.",
  "This photo was taken before the officer finished the work. Take a new photo at the spot now.": "அதிகாரி வேலையை முடிப்பதற்கு முன்பே இந்தப் புகைப்படம் எடுக்கப்பட்டது. இப்போது அந்த இடத்தில் புதிய புகைப்படம் எடுக்கவும்.",
- "Officer update": "அதிகாரியின் தகவல்"
+ "Officer update": "அதிகாரியின் தகவல்",
+ "Demo mode is on — sample photos and location can be used. Turn it off in the footer.": "டெமோ பயன்முறை இயக்கத்தில் உள்ளது — மாதிரிப் புகைப்படங்களும் இருப்பிடமும் பயன்படுத்தலாம். அடிக்குறிப்பில் அணைக்கலாம்.",
+ "Demo mode on — sample photos and location are available": "டெமோ பயன்முறை இயக்கப்பட்டது — மாதிரிப் புகைப்படங்களும் இருப்பிடமும் கிடைக்கும்",
+ "Demo mode off": "டெமோ பயன்முறை அணைக்கப்பட்டது",
+ "Demo mode: on (turn off)": "டெமோ பயன்முறை: இயக்கத்தில் (அணை)",
+ "Demo mode: off (turn on for presenting)": "டெமோ பயன்முறை: அணைப்பில் (காட்சிப்படுத்த இயக்கு)",
+ "Use a demo photo": "மாதிரிப் புகைப்படம் பயன்படுத்து",
+ "Demo photo": "மாதிரிப் புகைப்படம்",
+ "Demo photo added": "மாதிரிப் புகைப்படம் சேர்க்கப்பட்டது",
+ "Could not load the demo photo": "மாதிரிப் புகைப்படத்தை ஏற்ற முடியவில்லை",
+ "Use demo location (Avadi)": "மாதிரி இருப்பிடம் (ஆவடி)",
+ "Use demo location": "மாதிரி இருப்பிடம் பயன்படுத்து",
+ "Demo mode: a sample photo or location was used.": "டெமோ பயன்முறை: மாதிரிப் புகைப்படம் அல்லது இருப்பிடம் பயன்படுத்தப்பட்டது."
 };

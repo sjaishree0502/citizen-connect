@@ -73,6 +73,7 @@ export function applyMove(complaint, to, actor, extra = {}, now = new Date().toI
     next.afterLng = extra.afterLng;
     next.afterAcc = typeof extra.afterAcc === "number" ? extra.afterAcc : null;
     next.resolvedAt = now;
+    if (extra.demo) next.demo = true; // a demo-mode photo or location was used
     entry.photo = extra.afterPhoto;
   }
   if (to === "Reopened") {

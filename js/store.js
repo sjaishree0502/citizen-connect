@@ -52,12 +52,12 @@ function takeId() {
 }
 
 /** Create a new complaint from a validated form; returns the saved complaint. */
-export function create({ cat, photoRef, photoTakenAt, lat, lng, acc, area, note, city, zone }) {
+export function create({ cat, photoRef, photoTakenAt, lat, lng, acc, area, note, city, zone, demo = false }) {
   const now = new Date().toISOString();
   const c = {
     id: takeId(), cat, area: area.trim(), city, zone, lat, lng, acc: acc || null, note: (note || "").trim(), status: "Submitted", mine: true,
     beforePhoto: photoRef, beforeTakenAt: photoTakenAt || null, afterPhoto: null, officerNote: "", afterLat: null, afterLng: null,
-    reopenCount: 0, reText: "", createdAt: now, updatedAt: now,
+    reopenCount: 0, reText: "", demo, createdAt: now, updatedAt: now,
     history: [{ status: "Submitted", at: now, by: "citizen", note: "" }],
   };
   const list = all();

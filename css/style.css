@@ -308,6 +308,9 @@ button.stat.on { border-color: var(--link); box-shadow: 0 0 0 2px var(--link); }
 .photo-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; }
 .loc-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .due-pick { display: grid; gap: 10px; }
+.demo-strip { background: #FFE9A8; color: #5A4300; font-size: 13.5px; font-weight: 600; }
+.demo-strip .wrap { display: flex; gap: 8px; align-items: center; padding-top: 6px; padding-bottom: 6px; }
+.demo-btns { margin-top: 10px; }
 .loc-ok { padding: 12px 14px; border-radius: var(--r-sm); background: var(--green-bg); display: grid; gap: 4px; font-size: 14.5px; }
 .loc-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .loc-ok b { color: var(--green); }

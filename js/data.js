@@ -71,5 +71,8 @@ export const CITIES = [
   { en: "Coimbatore", state: "planned" },
 ];
 
+/** Demo mode: a ready-made location (Avadi) for presenting indoors, where GPS often fails. */
+export const DEMO_POINT = { lat: 13.1147, lng: 80.101, acc: 10 };
+
 /** Worst GPS accuracy (metres) accepted for the citizen's resolution photo location. */
 export const MAX_FIX_ACCURACY = 150;

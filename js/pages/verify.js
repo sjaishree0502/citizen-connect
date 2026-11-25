@@ -3,17 +3,17 @@
 // shown next to the first photo; "Reopen" sends it back to the officer with a reason.
 
 import { h, icon, toast, param, shortDate, distanceM } from "../helpers.js";
-import { t, lang, catName, ago } from "../i18n.js";
+import { t, lang, catName, ago, prefs } from "../i18n.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkReason, checkLocation, LIMITS } from "../validate.js";
 import { MAX_FIX_ACCURACY } from "../data.js";
 import { fixBaseline } from "../rules.js";
-import { preparePhoto, putPhoto, deletePhoto, isQuotaError } from "../photos.js";
+import { preparePhoto, putPhoto, deletePhoto, isQuotaError, demoPhoto } from "../photos.js";
 import { badge, compare, photo, timeline, locationMatch, zoneLine, empty, field, dueInfo, fixTiming } from "../ui.js";
 
 const id = (param("id") || "").toUpperCase();
-const res = { blob: null, url: "", takenAt: null, loc: null }; // the new photo for "Mark resolved"
+const res = { blob: null, url: "", takenAt: null, loc: null, demo: false }; // the new photo for "Mark resolved"
 let errs = {}, locating = false, saving = false;
 let reopening = false, reason = "", reasonErr = "";
 let redraw = () => {};
@@ -33,6 +33,17 @@ async function pick(c, file) {
   Object.assign(res, { blob: out.blob, url: URL.createObjectURL(out.blob), takenAt: out.takenAt });
   delete errs.photo;
   redraw();
+}
+
+/** Demo mode: a sample "fixed street" photo, counted as taken now. */
+async function useDemoPhoto() {
+  try {
+    const p = await demoPhoto("img/street-after.svg");
+    if (res.url) URL.revokeObjectURL(res.url);
+    Object.assign(res, { blob: p.blob, url: URL.createObjectURL(p.blob), takenAt: p.takenAt, demo: true });
+    delete errs.photo;
+    redraw();
+  } catch { toast(t("Could not load the demo photo"), { kind: "err" }); }
 }
 
 /** GPS where the new photo was taken (always a fresh reading). */
@@ -62,9 +73,9 @@ async function resolve(c) {
   const key = "r-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   try {
     await putPhoto(key, res.blob);
-    const { previous } = store.move(c.id, "Verified", "citizen", { afterPhoto: "idb:" + key, afterTakenAt: res.takenAt, afterLat: res.loc.lat, afterLng: res.loc.lng, afterAcc: res.loc.acc });
+    const { previous } = store.move(c.id, "Verified", "citizen", { afterPhoto: "idb:" + key, afterTakenAt: res.takenAt, afterLat: res.loc.lat, afterLng: res.loc.lng, afterAcc: res.loc.acc, demo: res.demo });
     if (res.url) URL.revokeObjectURL(res.url);
-    Object.assign(res, { blob: null, url: "", takenAt: null, loc: null });
+    Object.assign(res, { blob: null, url: "", takenAt: null, loc: null, demo: false });
     toast(t("✓ Resolved — complaint closed"), { action: t("Undo"), ms: 5000, onAction: () => { store.restore(previous); deletePhoto(key).catch(() => {}); redraw(); } });
   } catch (e) {
     deletePhoto(key).catch(() => {});
@@ -112,10 +123,12 @@ function decide(c) {
       res.url ? h("div", { class: "photo-meta" }, h("span", { class: "muted", text: t("Taken {when} · shown next to your first photo", { when: shortDate(new Date(res.takenAt).toISOString(), lang()) }) }),
           h("button", { type: "button", class: "link-btn", onclick: () => { URL.revokeObjectURL(res.url); Object.assign(res, { blob: null, url: "", takenAt: null }); redraw(); }, text: t("Retake photo") }))
         : h("label", { for: "after", class: "drop" + (errs.photo ? " err" : "") }, icon("camera", 28), h("b", { text: t("Take a new photo") })),
+      !res.url && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: useDemoPhoto }, icon("camera", 18), t("Use a demo photo"))) : null,
       errs.photo ? h("p", { class: "field-err", role: "alert", text: errs.photo }) : null),
     h("div", { class: "field" + (errs.loc ? " has-err" : "") }, h("p", { class: "field-label", text: t("Where did you take it?") }),
       res.loc ? h("p", { class: "match " + (dist <= 50 ? "ok" : "far") }, icon(dist <= 50 ? "check" : "info", 18), t("{d} m from your first pin", { d: dist }) + ` · ${t("accuracy {m} m", { m: res.loc.acc })}`)
-        : h("div", { class: "loc-btns" }, h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location"))),
+        : h("div", { class: "loc-btns" }, h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")),
+            prefs().demo ? h("button", { type: "button", class: "btn btn-ghost", onclick: () => { res.demo = true; setLoc({ lat: c.lat + 0.00008, lng: c.lng + 0.00005, acc: 10 }); }, text: t("Use demo location") }) : null),
       errs.loc ? h("p", { class: "field-err", role: "alert", text: errs.loc }) : null),
     h("div", { class: c.status === "Fixed" ? "two" : "" },
       h("button", { type: "button", class: "btn btn-green btn-lg" + (c.status === "Fixed" ? "" : " btn-block") + (saving ? " is-busy" : ""), disabled: saving || null, onclick: () => resolve(c) }, saving ? h("span", { class: "spinner" }) : icon("check", 20), t("Mark resolved")),
@@ -162,7 +175,8 @@ function render(main) {
           fixTiming(c) ? h("p", { class: fixTiming(c).late ? "warn-text" : "", text: fixTiming(c).text }) : null,
           c.afterTakenAt ? h("p", {}, h("b", { text: t("Resolution photo taken:") }), " " + shortDate(new Date(c.afterTakenAt).toISOString(), lang())) : null,
           c.note ? h("p", {}, h("b", { text: t("Your description:") }), " " + c.note) : null,
-          h("p", { class: "muted", text: zoneLine(c) }))),
+          h("p", { class: "muted", text: zoneLine(c) }),
+          c.demo ? h("p", { class: "muted", text: t("Demo mode: a sample photo or location was used.") }) : null)),
       h("div", { class: "col" }, statusNote(c), decide(c),
         h("section", { class: "card block" }, h("h2", { class: "block-title", text: t("What happened") }), timeline(c))))));
 }

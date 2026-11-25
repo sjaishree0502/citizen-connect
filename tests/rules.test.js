@@ -89,6 +89,11 @@ test("resolving stores the photo, its place and time, and keeps it in the timeli
   assert.equal(n.history.at(-1).by, "citizen");
 });
 
+test("resolving with a demo photo marks the complaint as demo", () => {
+  assert.equal(applyMove(base("Fixed"), "Verified", "citizen", { ...proof, demo: true }).demo, true);
+  assert.equal(applyMove(base("Fixed"), "Verified", "citizen", proof).demo, undefined);
+});
+
 // Reopen
 test("reopen is only possible after the officer says work is done", () => {
   assert.equal(canMove(base("In progress"), "Reopened", "citizen", { reason: "Only half filled" }).reason, "not-allowed");
