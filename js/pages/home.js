@@ -132,7 +132,8 @@ function tour() {
 
 /** Draw the page. */
 function render(main) {
-  main.replaceChildren(hero(), stats(), how(), types(), latest(), tour());
+  // latest() and tour() return null when there is nothing to show; replaceChildren would print "null".
+  main.replaceChildren(...[hero(), stats(), how(), types(), latest(), tour()].filter(Boolean));
 }
 
 let redraw = () => {};

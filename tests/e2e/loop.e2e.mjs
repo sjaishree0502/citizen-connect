@@ -65,6 +65,7 @@ try {
   await go("index.html");
   await page.evaluate(() => document.querySelector(".tour .btn-quiet")?.click());
   check(!(await has("Latest proof of fix")) && !/CHN-\d/.test(await text()), "home shows no complaints");
+  check(!/\bnull\b|undefined/.test(await text()), "home shows no stray 'null' text (empty sections are skipped)");
   check((await page.$$eval(".stats .stat-n", (els) => els.map((e) => e.textContent))).every((n) => n === "0"), "home counts are all zero");
   check((await page.$(".brand-logo.intro")) !== null, "logo intro plays on the first page");
   await click("தமிழ்");
