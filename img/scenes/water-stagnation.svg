@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="sc" viewBox="0 0 240 160"><style>
+.sc{display:block;width:100%;height:auto}
+.sc *{transform-box:view-box}
+@keyframes sc-lane{from{transform:translateX(0)}to{transform:translateX(-40px)}}
+.sc .lane{animation:sc-lane .8s linear infinite}
+@keyframes sc-ride{0%{transform:translateX(-70px)}100%{transform:translateX(290px)}}
+.sc .ride{animation:sc-ride 3.2s linear infinite}
+@keyframes sc-bump{0%,44%,60%,100%{transform:translateY(0) rotate(0deg)}49%{transform:translateY(5px) rotate(4deg)}53%{transform:translateY(-12px) rotate(-6deg)}}
+.sc .bump{transform-origin:center;transform-box:fill-box;animation:sc-bump 3.2s linear infinite}
+@keyframes sc-splash{0%,45%{opacity:0;transform:translateY(0) scale(.4)}52%{opacity:1;transform:translateY(-14px) scale(1)}62%,100%{opacity:0;transform:translateY(-4px) scale(1)}}
+.sc .splash{transform-box:fill-box;transform-origin:center bottom;animation:sc-splash 3.2s ease-out infinite}
+@keyframes sc-spread{0%{transform:scaleX(.35);opacity:.9}100%{transform:scaleX(1.25);opacity:.25}}
+.sc .spread{transform-box:fill-box;transform-origin:center;animation:sc-spread 2.4s ease-out infinite}
+@keyframes sc-bubble{0%{transform:translateY(0);opacity:0}20%{opacity:1}100%{transform:translateY(-26px);opacity:0}}
+.sc .bub{transform-box:fill-box;animation:sc-bubble 1.6s ease-in infinite}.sc .bub2{animation-delay:.5s}.sc .bub3{animation-delay:1s}
+@keyframes sc-wave{from{transform:translateX(0)}to{transform:translateX(-24px)}}
+.sc .wave{animation:sc-wave 1s linear infinite}
+@keyframes sc-orbit{from{transform:rotate(0deg) translateX(16px) rotate(0deg)}to{transform:rotate(360deg) translateX(16px) rotate(-360deg)}}
+.sc .fly{animation:sc-orbit 1.2s linear infinite}.sc .fly2{animation-duration:1.7s;animation-direction:reverse}.sc .fly3{animation-duration:.9s}
+@keyframes sc-stink{0%{transform:translateY(6px);opacity:0}40%{opacity:.9}100%{transform:translateY(-16px);opacity:0}}
+.sc .stink{transform-box:fill-box;animation:sc-stink 2s ease-out infinite}.sc .stink2{animation-delay:.7s}
+@keyframes sc-flick{0%,52%{opacity:1}55%{opacity:.1}58%{opacity:.9}62%{opacity:.05}65%{opacity:.8}68%,100%{opacity:0}}
+.sc .flick{animation:sc-flick 3s steps(1,end) infinite}
+@keyframes sc-swing{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+.sc .swing{transform-origin:120px 30px;animation:sc-swing 1.8s ease-in-out infinite}
+@keyframes sc-spark{0%,70%,100%{opacity:0;transform:scale(.4)}75%{opacity:1;transform:scale(1.2)}82%{opacity:0}}
+.sc .spark{transform-box:fill-box;transform-origin:center;animation:sc-spark 1.8s infinite}
+@keyframes sc-walk{0%{transform:translateX(-30px)}100%{transform:translateX(270px)}}
+.sc .walk{animation:sc-walk 5s linear infinite}
+@keyframes sc-duck{0%,40%,62%,100%{transform:translateY(0)}48%,56%{transform:translateY(6px)}}
+.sc .duck{animation:sc-duck 5s linear infinite}
+@keyframes sc-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.sc .pulse{transform-box:fill-box;transform-origin:center;animation:sc-pulse 1s ease-in-out infinite}
+@keyframes sc-rain{from{transform:translateY(-30px)}to{transform:translateY(110px)}}
+.sc .rain{animation:sc-rain .7s linear infinite}.sc .rain2{animation-delay:.35s}
+@keyframes sc-ring{0%{transform:scale(.2);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+.sc .ring{transform-box:fill-box;transform-origin:center;animation:sc-ring 1.4s ease-out infinite}.sc .ring2{animation-delay:.7s}
+@keyframes sc-hover{0%,100%{transform:translate(0,0)}25%{transform:translate(4px,-4px)}50%{transform:translate(8px,0)}75%{transform:translate(4px,4px)}}
+.sc .hover{animation:sc-hover 1s ease-in-out infinite}.sc .hover2{animation-duration:1.3s;animation-direction:reverse}
+@keyframes sc-gust{from{transform:translateX(-60px);opacity:0}30%{opacity:.8}to{transform:translateX(120px);opacity:0}}
+.sc .gust{animation:sc-gust 1.4s linear infinite}.sc .gust2{animation-delay:.6s}
+@keyframes sc-fall{0%,20%{transform:rotate(0deg)}30%{transform:rotate(-6deg)}55%,85%{transform:rotate(82deg)}100%{transform:rotate(0deg)}}
+.sc .fall{transform-origin:70px 120px;animation:sc-fall 4s ease-in infinite}
+@keyframes sc-block{0%,50%{opacity:0;transform:scale(.6)}58%,88%{opacity:1;transform:scale(1)}100%{opacity:0}}
+.sc .block{transform-box:fill-box;transform-origin:center bottom;animation:sc-block 4s infinite}
+@keyframes sc-drop{0%{transform:translateY(-6px);opacity:0}20%{opacity:1}100%{transform:translateY(22px);opacity:0}}
+.sc .drop{transform-box:fill-box;animation:sc-drop 1.2s ease-in infinite}.sc .drop2{animation-delay:.4s}.sc .drop3{animation-delay:.8s}
+@keyframes sc-around{0%{transform:translate(-30px,0)}40%{transform:translate(100px,0)}50%{transform:translate(120px,-14px)}62%{transform:translate(150px,-14px)}72%{transform:translate(170px,0)}100%{transform:translate(270px,0)}}
+.sc .around{animation:sc-around 5s linear infinite}
+@keyframes sc-scan{0%,100%{transform:translateX(0)}50%{transform:translateX(120px)}}
+.sc .scan{animation:sc-scan 3s ease-in-out infinite}
+@keyframes sc-q{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.sc .q{animation:sc-q 1.2s ease-in-out infinite}
+
+@keyframes sc-wag{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-25deg)}}
+.sc .wag{transform-box:fill-box;transform-origin:right bottom;animation:sc-wag .35s ease-in-out infinite}
+@keyframes sc-roam{0%{transform:translateX(0) scaleX(1)}45%{transform:translateX(120px) scaleX(1)}50%{transform:translateX(120px) scaleX(-1)}95%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+.sc .roam{transform-box:fill-box;transform-origin:center;animation:sc-roam 5s linear infinite}
+@keyframes sc-stop{0%{transform:translateX(-30px)}45%,70%{transform:translateX(66px)}100%{transform:translateX(-30px)}}
+.sc .stop{animation:sc-stop 4.5s ease-in-out infinite}
+@keyframes sc-spurt{0%{transform:translate(0,0);opacity:0}15%{opacity:1}50%{transform:translate(16px,-26px)}100%{transform:translate(34px,-4px);opacity:0}}
+.sc .spurt{transform-box:fill-box;animation:sc-spurt .9s ease-out infinite}.sc .spurt2{animation-delay:.3s}.sc .spurt3{animation-delay:.6s}
+@keyframes sc-dust{0%{transform:translateY(0) scale(.6);opacity:0}30%{opacity:.8}100%{transform:translateY(-22px) scale(1.4);opacity:0}}
+.sc .dust{transform-box:fill-box;transform-origin:center;animation:sc-dust 1.8s ease-out infinite}.sc .dust2{animation-delay:.6s}.sc .dust3{animation-delay:1.2s}
+</style><rect width="240" height="160" fill="#C9D6E3"/><rect x="6" y="56" width="50" height="52" fill="#E9D8B4"/><rect x="62" y="40" width="44" height="68" fill="#F2E6CC"/><rect x="190" y="50" width="50" height="58" fill="#E2CFA8"/><path d="M14 66h10v10H14zM34 66h10v10H34zM70 52h10v10H70zM88 52h10v10H88zM198 62h10v10h-10zM218 62h10v10h-10z" fill="#9FB0C6"/><rect y="108" width="240" height="52" fill="#8B8F7A"/><ellipse cx="120" cy="136" rx="92" ry="16" fill="#6D93B0"/><ellipse cx="114" cy="134" rx="60" ry="8" fill="#86A9C4"/><ellipse class="ring" cx="92" cy="134" rx="10" ry="3" fill="none" stroke="#E2ECF5" stroke-width="1.6"/><ellipse class="ring ring2" cx="148" cy="138" rx="10" ry="3" fill="none" stroke="#E2ECF5" stroke-width="1.6"/><g class="rain"><path d="M60 0l-3 10M110 10l-3 10M170 -4l-3 10M210 8l-3 10M30 14l-3 10" stroke="#5B7FA0" stroke-width="2" stroke-linecap="round"/></g><g class="rain rain2"><path d="M86 2l-3 10M140 6l-3 10M196 -2l-3 10M44 -6l-3 10" stroke="#5B7FA0" stroke-width="2" stroke-linecap="round"/></g><g transform="translate(150 96)"><g class="hover"><circle r="2.4" fill="#111827"/><path d="M-1-2l-5-4M1-2l5-4" stroke="#111827" stroke-width="1.2"/></g></g><g transform="translate(96 100)"><g class="hover hover2"><circle r="2.2" fill="#111827"/><path d="M-1-2l-5-4M1-2l5-4" stroke="#111827" stroke-width="1.2"/></g></g></svg>

@@ -1,0 +1,14 @@
+{
+  "name": "citizen-connect",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e/loop.e2e.mjs",
+    "build-sw": "python3 tools-build-sw.py"
+  },
+  "devDependencies": {
+    "puppeteer-core": "23.11.1"
+  }
+}

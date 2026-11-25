@@ -1,0 +1,23 @@
+{
+  "name": "Citizen Connect — Namma Ooru Fix",
+  "short_name": "Citizen Connect",
+  "description": "Raise a street problem in Chennai with a photo and location. It closes only when you confirm the fix.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FBF7EF",
+  "theme_color": "#14306E",
+  "lang": "en-IN",
+  "categories": ["government", "utilities"],
+  "icons": [
+    { "src": "img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Raise a complaint", "url": "./raise.html", "icons": [{ "src": "img/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "My complaints", "url": "./my.html", "icons": [{ "src": "img/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
