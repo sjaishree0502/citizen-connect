@@ -9,7 +9,7 @@ import * as store from "../store.js";
 import { checkTrackId } from "../validate.js";
 import { badge, pair } from "../ui.js";
 
-let trackValue = "", trackErr = "", trackHit = null;
+let trackValue = "", trackErr = "", trackHit = null, allTypes = false;
 
 /** Banner with headline, actions and the example proof card. */
 function hero() {
@@ -82,13 +82,21 @@ function how() {
       step(3, t("You resolve it."), t("Only you can close it — with a new photo taken at the spot. Not fixed? Reopen it."))));
 }
 
-/** First 8 problem types + link to the rest. */
+/** An arrow pointing up (for "Show fewer"). */
+function up() {
+  const i = icon("arrow", 28);
+  i.classList.add("up");
+  return i;
+}
+
+/** First 9 problem types; the last tile shows the rest here on Home (and hides them again). */
 function types() {
   const tile = (c) => h("a", { href: `raise.html?cat=${c.key}`, class: "type" }, h("img", { src: `img/scenes/${c.scene}.svg`, alt: "", loading: "lazy", width: 240, height: 160 }), h("span", { text: t(c.en) }));
   return h("section", { class: "wrap section" },
     h("h2", { class: "sec-title", text: t("What can you report?") }),
-    h("div", { class: "types" }, CATEGORIES.slice(0, 9).map(tile),
-      h("a", { href: "raise.html?more=1", class: "type type-more" }, h("span", { class: "more-n", text: "+" + (CATEGORIES.length - 9) }), h("span", { text: t("more problem types") }))));
+    h("div", { class: "types", id: "types" }, (allTypes ? CATEGORIES : CATEGORIES.slice(0, 9)).map(tile),
+      h("button", { type: "button", class: "type type-more", "aria-expanded": allTypes ? "true" : "false", "aria-controls": "types", onclick: () => { allTypes = !allTypes; redraw(); } },
+        h("span", { class: "more-n" }, allTypes ? up() : "+" + (CATEGORIES.length - 9)), h("span", { text: allTypes ? t("Show fewer problem types") : t("more problem types") }))));
 }
 
 /** Latest resolved fixes from the store. */
@@ -138,4 +146,4 @@ function render(main) {
 
 let redraw = () => {};
 const draw = boot({ page: "home", render, title: () => t("Home") });
-redraw = () => draw();
+redraw = () => { const y = window.scrollY; draw(); window.scrollTo(0, y); };

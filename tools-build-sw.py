@@ -29,15 +29,17 @@ self.addEventListener("activate", (e) => {{
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 }});
 
-// Cache first for our own files; pages match without their ?id=… part.
+// Network first for our own files, so a reload always shows the latest version when online;
+// the saved copy is used only when offline. Pages match without their ?id=… part.
 self.addEventListener("fetch", (e) => {{
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
   e.respondWith(
-    caches.match(req, {{ ignoreSearch: req.mode === "navigate" }}).then((hit) => hit || fetch(req).then((res) => {{
+    fetch(req).then((res) => {{
       if (res.ok && res.type === "basic") {{ const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }}
       return res;
-    }}).catch(() => (req.mode === "navigate" ? caches.match("./index.html") : Response.error())))
+    }}).catch(() => caches.match(req, {{ ignoreSearch: req.mode === "navigate" }})
+      .then((hit) => hit || (req.mode === "navigate" ? caches.match("./index.html") : Response.error())))
   );
 }});
 """

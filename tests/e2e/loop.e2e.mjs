@@ -68,6 +68,12 @@ try {
   check(!/\bnull\b|undefined/.test(await text()), "home shows no stray 'null' text (empty sections are skipped)");
   check((await page.$$eval(".stats .stat-n", (els) => els.map((e) => e.textContent))).every((n) => n === "0"), "home counts are all zero");
   check((await page.$(".brand-logo.intro")) !== null, "logo intro plays on the first page");
+  const tiles = () => page.$$eval(".types .type:not(.type-more)", (els) => els.length);
+  const shown = await tiles();
+  await click("more problem types");
+  check(page.url().endsWith("index.html") && shown === 9 && (await tiles()) === 14, "'+5 more problem types' shows all 14 here on Home");
+  await click("Show fewer problem types");
+  check((await tiles()) === 9, "'Show fewer' hides them again");
   await click("தமிழ்");
   check((await page.$(".brand-logo.intro")) === null, "logo intro does not replay after switching language");
   await click("EN");
@@ -182,10 +188,9 @@ try {
 
   console.log("Demo mode (presenting without a camera or GPS)");
   check(!(await has("Use a demo photo")), "demo buttons are hidden while demo mode is off");
-  await click("Demo mode: off");
-  await sleep(1200);
-  await page.waitForNetworkIdle().catch(() => {});
-  check(await has("Demo mode is on"), "demo mode banner shows");
+  await page.click(".tool-switch");
+  await sleep(500);
+  check((await has("Demo mode is on")) && (await page.$eval(".tool-switch", (e) => e.getAttribute("aria-checked"))) === "true", "demo switch turns on at once and the banner shows");
   await go("raise.html");
   await page.click(".cat");
   await click("Use a demo photo");
@@ -208,14 +213,15 @@ try {
   await click("Mark resolved");
   await sleep(5500);
   check((await has("CHN-002 is closed with your photo")) && (await has("Demo mode: a sample photo or location was used.")), "resolved in demo mode, and labelled as demo");
-  await click("Demo mode: on");
-  await sleep(1200);
-  await page.waitForNetworkIdle().catch(() => {});
+  await page.click(".tool-switch");
+  await sleep(500);
   check(!(await has("Demo mode is on")), "demo mode turns off again");
 
   console.log("Erase data");
-  await click("Erase data on this device");
-  await click("Erase data on this device");
+  const tapErase = () => page.$eval(".tool-danger", (b) => b.click()); // a toast may cover the footer
+  await tapErase();
+  check(await has("Tap again to erase everything"), "first tap on erase asks again on the button");
+  await tapErase();
   await sleep(1500);
   await go("my.html");
   check(await has("You have not raised any complaints yet"), "complaints erased");

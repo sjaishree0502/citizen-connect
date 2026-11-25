@@ -246,7 +246,6 @@ export default {
  "Directions to the spot": "இடத்துக்கு வழி",
  "All data on this device erased": "இந்தச் சாதனத்திலுள்ள எல்லாத் தரவும் அழிக்கப்பட்டது",
  "Erase data on this device": "இந்தச் சாதனத்தின் தரவை அழி",
- "This deletes every complaint, photo and the officer PIN on this device. Tap again to confirm.": "இது இந்தச் சாதனத்திலுள்ள எல்லாப் புகார்கள், புகைப்படங்கள் மற்றும் அதிகாரி PIN-ஐ அழிக்கும். உறுதிசெய்ய மீண்டும் தட்டவும்.",
  "The two PINs do not match.": "இரண்டு PIN-களும் பொருந்தவில்லை.",
  "Officer PIN set · signed in": "அதிகாரி PIN அமைக்கப்பட்டது · உள்நுழைந்தீர்கள்",
  "Too many wrong tries. Wait 30 seconds.": "பல முறை தவறான முயற்சிகள். 30 வினாடிகள் காத்திருக்கவும்.",
@@ -356,8 +355,6 @@ export default {
  "Demo mode is on — sample photos and location can be used. Turn it off in the footer.": "டெமோ பயன்முறை இயக்கத்தில் உள்ளது — மாதிரிப் புகைப்படங்களும் இருப்பிடமும் பயன்படுத்தலாம். அடிக்குறிப்பில் அணைக்கலாம்.",
  "Demo mode on — sample photos and location are available": "டெமோ பயன்முறை இயக்கப்பட்டது — மாதிரிப் புகைப்படங்களும் இருப்பிடமும் கிடைக்கும்",
  "Demo mode off": "டெமோ பயன்முறை அணைக்கப்பட்டது",
- "Demo mode: on (turn off)": "டெமோ பயன்முறை: இயக்கத்தில் (அணை)",
- "Demo mode: off (turn on for presenting)": "டெமோ பயன்முறை: அணைப்பில் (காட்சிப்படுத்த இயக்கு)",
  "Use a demo photo": "மாதிரிப் புகைப்படம் பயன்படுத்து",
  "Demo photo": "மாதிரிப் புகைப்படம்",
  "Demo photo added": "மாதிரிப் புகைப்படம் சேர்க்கப்பட்டது",
@@ -367,5 +364,10 @@ export default {
  "Demo mode: a sample photo or location was used.": "டெமோ பயன்முறை: மாதிரிப் புகைப்படம் அல்லது இருப்பிடம் பயன்படுத்தப்பட்டது.",
  "Try another demo photo": "வேறு மாதிரிப் புகைப்படம்",
  "Presenting without a camera? Use demo photos": "கேமரா இல்லாமல் காட்சிப்படுத்துகிறீர்களா? மாதிரிப் புகைப்படங்களைப் பயன்படுத்துங்கள்",
- "Menu": "பட்டியல்"
+ "Menu": "பட்டியல்",
+ "Demo mode": "டெமோ பயன்முறை",
+ "Sample photos and location for presenting": "காட்சிப்படுத்த மாதிரிப் புகைப்படங்களும் இருப்பிடமும்",
+ "Every complaint, photo and the officer PIN": "எல்லாப் புகார்கள், புகைப்படங்கள் மற்றும் அதிகாரி PIN",
+ "Tap again to erase everything": "அனைத்தையும் அழிக்க மீண்டும் தட்டவும்",
+ "On this device": "இந்தச் சாதனத்தில்"
 };

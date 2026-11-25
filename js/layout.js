@@ -135,13 +135,16 @@ function header(active, officerPage, rerender) {
 
 /** Hamburger button + drop-down panel for phones and small tablets (the desktop nav hides there). */
 function phoneMenu(active, officerPage, need) {
-  const link = (href, key, ico, label, extra) => h("a", { href, class: "menu-item" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null }, icon(ico, 20), h("span", { class: "menu-label", text: label }), extra);
+  const row = (ico, label, extra) => [h("span", { class: "menu-ico" }, icon(ico, 20)), h("span", { class: "menu-label", text: label }), extra || icon("arrow", 16)];
+  const link = (href, key, ico, label, extra) => h("a", { href, class: "menu-item" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null }, row(ico, label, extra));
   const items = officerPage
     ? [link("officer.html", "officer", "grid", t("Dashboard")),
-       h("button", { type: "button", class: "menu-item", onclick: () => { setOfficer(false); location.href = "index.html"; } }, icon("out", 20), h("span", { class: "menu-label", text: t("Sign out") }))]
+       h("hr", { class: "menu-sep" }),
+       h("button", { type: "button", class: "menu-item", onclick: () => { setOfficer(false); location.href = "index.html"; } }, row("out", t("Sign out")))]
     : [link("index.html", "home", "home", t("Home")),
        link("raise.html", "raise", "plus", t("Raise a complaint")),
        link("my.html", "my", "list", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
+       h("hr", { class: "menu-sep" }),
        isOfficer() ? link("officer.html", "officer", "grid", t("Officer dashboard")) : link("login.html", "login", "shield", t("Officer login"))];
   const panel = h("nav", { id: "site-menu", class: "menu", "aria-label": t("Menu"), hidden: true }, h("div", { class: "wrap menu-in" }, items));
   const btn = h("button", { type: "button", class: "menu-btn", "aria-label": need && !officerPage ? t("Menu") + " — " + t("{n} need your check", { n: need }) : t("Menu"), "aria-expanded": "false", "aria-controls": "site-menu" },
@@ -158,8 +161,31 @@ function phoneMenu(active, officerPage, need) {
   return { btn, panel };
 }
 
-/** Footer: zones, honesty note, school credit, CM helpline, erase data. */
-function footer() {
+/** "On this device" tools: demo mode switch (applies at once) and erase with a two-tap confirm on the button. */
+function deviceTools(redrawAll) {
+  const demo = prefs().demo;
+  const sw = h("button", { type: "button", class: "tool tool-switch", role: "switch", "aria-checked": demo ? "true" : "false", onclick: () => {
+    setPref("demo", !demo);
+    redrawAll();
+    toast(!demo ? t("Demo mode on — sample photos and location are available") : t("Demo mode off"), { kind: "info" });
+  } },
+    h("span", { class: "tool-ico" }, icon("camera", 18)),
+    h("span", { class: "tool-text" }, h("b", { text: t("Demo mode") }), h("small", { text: t("Sample photos and location for presenting") })),
+    h("span", { class: "sw", "aria-hidden": "true" }, h("span", { class: "sw-knob" })));
+  const label = h("span", { class: "tool-text" }, h("b", { text: t("Erase data on this device") }), h("small", { text: t("Every complaint, photo and the officer PIN") }));
+  const erase = h("button", { type: "button", class: "tool tool-danger", onclick: async () => {
+    if (!confirmReset(erase, label)) return;
+    await store.reset();
+    try { localStorage.removeItem(PIN); } catch { /* ignore */ }
+    setOfficer(false);
+    toast(t("All data on this device erased"));
+    setTimeout(() => { location.href = "index.html"; }, 600);
+  } }, h("span", { class: "tool-ico" }, icon("trash", 18)), label);
+  return h("div", { class: "foot-tools" }, h("p", { class: "foot-tools-title", text: t("On this device") }), h("div", { class: "tools" }, sw, erase));
+}
+
+/** Footer: zones, honesty note, school credit, CM helpline, device tools. */
+function footer(redrawAll) {
   return h("footer", { class: "foot" }, h("div", { class: "wrap foot-in" },
     h("div", {},
       h("p", { class: "foot-title", text: t("Covers all 15 zones of Greater Chennai, and Avadi City Corporation") }),
@@ -167,29 +193,19 @@ function footer() {
     h("div", { class: "foot-meta" },
       h("p", { text: t("Student prototype — not an official Greater Chennai Corporation app.") }),
       h("p", { text: t("For other government services, call 1100 (CM Helpline).") }),
-      h("p", { class: "foot-muted" }, t("Made by Class XII students of"), " ", h("b", { text: t("Gandhiji Matriculation School, Avadi") }), " ", t("· Inter-School Hackathon 2026")),
-      h("button", { type: "button", class: "link-btn", onclick: async () => {
-        if (!confirmReset()) return;
-        await store.reset();
-        try { localStorage.removeItem(PIN); } catch { /* ignore */ }
-        setOfficer(false);
-        toast(t("All data on this device erased"));
-        setTimeout(() => { location.href = "index.html"; }, 600);
-      } }, t("Erase data on this device")),
-      h("button", { type: "button", class: "link-btn", "aria-pressed": prefs().demo ? "true" : "false", onclick: () => {
-        setPref("demo", !prefs().demo);
-        toast(prefs().demo ? t("Demo mode on — sample photos and location are available") : t("Demo mode off"), { kind: "info" });
-        setTimeout(() => location.reload(), 600);
-      } }, prefs().demo ? t("Demo mode: on (turn off)") : t("Demo mode: off (turn on for presenting)")))));
+      h("p", { class: "foot-muted" }, t("Made by Class XII students of"), " ", h("b", { text: t("Gandhiji Matriculation School, Avadi") }), " ", t("· Inter-School Hackathon 2026")))),
+    h("div", { class: "wrap" }, deviceTools(redrawAll)));
 }
 
-/** Ask before wiping (uses a simple built-in prompt-free two-tap confirm). */
+/** Two-tap confirm before wiping: the first tap turns the button red and asks again for 4 seconds. */
 let resetArmed = 0;
-function confirmReset() {
+function confirmReset(btn, label) {
   const now = Date.now();
   if (now - resetArmed < 4000) { resetArmed = 0; return true; }
   resetArmed = now;
-  toast(t("This deletes every complaint, photo and the officer PIN on this device. Tap again to confirm."), { kind: "info", ms: 4000 });
+  btn.classList.add("armed");
+  label.firstChild.textContent = t("Tap again to erase everything");
+  setTimeout(() => { btn.classList.remove("armed"); label.firstChild.textContent = t("Erase data on this device"); }, 4000);
   return false;
 }
 
@@ -213,7 +229,7 @@ export function boot({ page, officer = false, render, title }) {
     skip.textContent = t("Skip to content");
     render(main);
     body.querySelector(".foot")?.remove();
-    body.append(footer());
+    body.append(footer(() => draw()));
   };
   main.classList.add("enter");
   draw();
