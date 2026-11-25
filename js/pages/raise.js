@@ -2,8 +2,8 @@
 // Nothing is saved until every check in validate.js passes.
 
 import { h, icon, toast, toastNext, distanceM, reducedMotion } from "../helpers.js";
-import { t, catName, placeName, prefs } from "../i18n.js";
-import { CATEGORIES, placeFor, catByKey, DEMO_POINT } from "../data.js";
+import { t, catName, placeName, prefs, setPref } from "../i18n.js";
+import { CATEGORIES, placeFor, catByKey, DEMO_POINT, demoPhotoPath } from "../data.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkRaise, checkLocation, LIMITS } from "../validate.js";
@@ -67,20 +67,31 @@ function photoStep(err) {
   });
   const body = form.photo
     ? h("div", { class: "photo-prev" }, h("img", { src: form.photoURL, alt: t("Your photo"), width: 640, height: 400, class: fresh.photo ? "pop" : null }),
-        h("div", { class: "photo-meta" }, h("span", { class: "muted", text: form.photoInfo }), h("button", { type: "button", class: "link-btn", onclick: () => { form.photo = null; form.photoURL = ""; redraw(); toast(t("Photo removed")); } }, t("Remove photo"))))
+        h("div", { class: "photo-meta" }, h("span", { class: "muted", text: form.photoInfo }),
+          form.demo && prefs().demo ? h("button", { type: "button", class: "link-btn", onclick: useDemoPhoto }, t("Try another demo photo")) : null,
+          h("button", { type: "button", class: "link-btn", onclick: () => { form.photo = null; form.photoURL = ""; redraw(); toast(t("Photo removed")); } }, t("Remove photo"))))
     : h("label", { for: "photo", class: "drop" + (err ? " err" : "") }, icon("camera", 32), h("b", { text: t("Take or choose a photo") }), h("span", { id: "photo-hint", class: "muted", text: t("JPG, PNG or WebP · under 15 MB · at least 200 × 200") }));
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-photo", "aria-labelledby": "h-photo" },
     h("h2", { id: "h-photo", class: "block-title", text: t("2 · Add a photo") }), input, body,
     h("p", { class: "field-hint", text: t("Keep people’s faces and vehicle number plates out of the photo.") }),
-    !form.photo && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: useDemoPhoto }, icon("camera", 18), t("Use a demo photo"))) : null,
+    !form.photo ? demoChoice(useDemoPhoto) : null,
     err ? h("p", { class: "field-err", role: "alert", text: t(err) }) : null);
 }
 
-/** Demo mode: a sample photo of the chosen problem type (or a random one), counted as taken now. */
+/** "Use a demo photo" in demo mode, otherwise a small link that turns demo mode on (for presenting). */
+function demoChoice(use) {
+  if (prefs().demo) return h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: use }, icon("camera", 18), t("Use a demo photo")));
+  return h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — sample photos and location are available"), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")));
+}
+
+/** Demo mode: a real sample photo of the chosen problem type (or a random type), counted as taken now. */
+let lastDemo = "";
 async function useDemoPhoto() {
   const cat = form.cat ? catByKey(form.cat) : CATEGORIES[Math.floor(Math.random() * (CATEGORIES.length - 1))];
+  if (!form.cat) form.cat = cat.key;
   try {
-    const p = await demoPhoto(`img/scenes/${cat.scene}.svg`);
+    lastDemo = demoPhotoPath(cat.key, "before", lastDemo);
+    const p = await demoPhoto(lastDemo);
     form.demo = true;
     setPhoto(p.blob, `${t("Demo photo")} · ${t(cat.en)} · ${Math.round(p.blob.size / 1024)} KB`, p.takenAt);
     toast(t("Demo photo added"));

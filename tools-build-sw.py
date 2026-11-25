@@ -2,7 +2,7 @@
 # Run after changing files:  python3 tools-build-sw.py
 import os, hashlib, json
 root = os.path.dirname(os.path.abspath(__file__))
-SKIP_DIRS = {"tests", "docs", "node_modules", ".git", ".github"}
+SKIP_DIRS = {"tests", "docs", "node_modules", ".git", ".github", "demo"}  # img/demo loads only when used
 SKIP_FILES = {"service-worker.js", "package.json", "package-lock.json"}
 files, h = [], hashlib.sha1()
 for d, dirs, fs in os.walk(root):

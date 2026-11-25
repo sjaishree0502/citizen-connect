@@ -134,7 +134,6 @@ export default {
  "Problem": "பிரச்சினை",
  "Prove it.": "நிரூபி.",
  "Public toilet": "பொதுக் கழிப்பறை",
- "Raise": "புகார்",
  "Raise a complaint": "புகார் அளி",
  "Raise a street problem in under a minute. When the Corporation fixes it, you check the proof and decide if it is really done.": "ஒரு நிமிடத்துக்குள் தெருப் பிரச்சினையைப் புகார் செய்யுங்கள். மாநகராட்சி சரி செய்ததும், ஆதாரத்தைப் பார்த்து உண்மையில் முடிந்ததா என்று நீங்களே முடிவு செய்யுங்கள்.",
  "Raise another": "இன்னொரு புகார்",
@@ -365,5 +364,8 @@ export default {
  "Could not load the demo photo": "மாதிரிப் புகைப்படத்தை ஏற்ற முடியவில்லை",
  "Use demo location (Avadi)": "மாதிரி இருப்பிடம் (ஆவடி)",
  "Use demo location": "மாதிரி இருப்பிடம் பயன்படுத்து",
- "Demo mode: a sample photo or location was used.": "டெமோ பயன்முறை: மாதிரிப் புகைப்படம் அல்லது இருப்பிடம் பயன்படுத்தப்பட்டது."
+ "Demo mode: a sample photo or location was used.": "டெமோ பயன்முறை: மாதிரிப் புகைப்படம் அல்லது இருப்பிடம் பயன்படுத்தப்பட்டது.",
+ "Try another demo photo": "வேறு மாதிரிப் புகைப்படம்",
+ "Presenting without a camera? Use demo photos": "கேமரா இல்லாமல் காட்சிப்படுத்துகிறீர்களா? மாதிரிப் புகைப்படங்களைப் பயன்படுத்துங்கள்",
+ "Menu": "பட்டியல்"
 };

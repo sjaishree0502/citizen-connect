@@ -71,6 +71,24 @@ export const CITIES = [
   { en: "Coimbatore", state: "planned" },
 ];
 
+/**
+ * Demo mode: real-world sample photos in img/demo (credits in img/demo/CREDITS.md), as
+ * "<type>-before-<n>.jpg" (the problem) and "<type>-after-<n>.jpg" (fixed). Numbers = how many of each.
+ */
+const DEMO_PHOTOS = {
+  pothole: [2, 2], drainage: [1, 2], garbage: [2, 1], streetlight: [1, 2], wire: [1, 1], stagnation: [2, 2], tree: [2, 2],
+  footpath: [2, 2], manhole: [1, 2], animals: [2, 2], debris: [2, 2], pipe: [2, 2], toilet: [2, 1], other: [1, 2],
+};
+
+/** A random demo photo path for a problem type ("before" = the problem, "after" = fixed), different from `not` when possible. */
+export function demoPhotoPath(cat, kind, not = "") {
+  const [before, after] = DEMO_PHOTOS[cat] || DEMO_PHOTOS.other;
+  const n = kind === "before" ? before : after;
+  const paths = Array.from({ length: n }, (_, i) => `img/demo/${DEMO_PHOTOS[cat] ? cat : "other"}-${kind}-${i + 1}.jpg`);
+  const pool = paths.length > 1 ? paths.filter((p) => p !== not) : paths;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 /** Demo mode: a ready-made location (Avadi) for presenting indoors, where GPS often fails. */
 export const DEMO_POINT = { lat: 13.1147, lng: 80.101, acc: 10 };
 

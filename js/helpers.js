@@ -43,6 +43,7 @@ const ICONS = {
   arrow: "M5 12h14M13 6l6 6-6 6",
   back: "M19 12H5M11 18l-6-6 6-6",
   x: "M6 6l12 12M18 6L6 18",
+  menu: "M4 6h16M4 12h16M4 18h16",
   clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",
   trash: "M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3",
   info: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5",

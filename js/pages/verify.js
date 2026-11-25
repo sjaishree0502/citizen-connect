@@ -3,17 +3,17 @@
 // shown next to the first photo; "Reopen" sends it back to the officer with a reason.
 
 import { h, icon, toast, param, shortDate, distanceM } from "../helpers.js";
-import { t, lang, catName, ago, prefs } from "../i18n.js";
+import { t, lang, catName, ago, prefs, setPref } from "../i18n.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkReason, checkLocation, LIMITS } from "../validate.js";
-import { MAX_FIX_ACCURACY } from "../data.js";
+import { MAX_FIX_ACCURACY, demoPhotoPath } from "../data.js";
 import { fixBaseline } from "../rules.js";
 import { preparePhoto, putPhoto, deletePhoto, isQuotaError, demoPhoto } from "../photos.js";
 import { badge, compare, photo, timeline, locationMatch, zoneLine, empty, field, dueInfo, fixTiming } from "../ui.js";
 
 const id = (param("id") || "").toUpperCase();
-const res = { blob: null, url: "", takenAt: null, loc: null, demo: false }; // the new photo for "Mark resolved"
+const res = { blob: null, url: "", takenAt: null, loc: null, demo: false, path: "" }; // the new photo for "Mark resolved"
 let errs = {}, locating = false, saving = false;
 let reopening = false, reason = "", reasonErr = "";
 let redraw = () => {};
@@ -35,12 +35,13 @@ async function pick(c, file) {
   redraw();
 }
 
-/** Demo mode: a sample "fixed street" photo, counted as taken now. */
-async function useDemoPhoto() {
+/** Demo mode: a real sample photo of this problem type after it was fixed (random), counted as taken now. */
+async function useDemoPhoto(c) {
   try {
-    const p = await demoPhoto("img/street-after.svg");
+    const path = demoPhotoPath(c.cat, "after", res.path);
+    const p = await demoPhoto(path);
     if (res.url) URL.revokeObjectURL(res.url);
-    Object.assign(res, { blob: p.blob, url: URL.createObjectURL(p.blob), takenAt: p.takenAt, demo: true });
+    Object.assign(res, { blob: p.blob, url: URL.createObjectURL(p.blob), takenAt: p.takenAt, demo: true, path });
     delete errs.photo;
     redraw();
   } catch { toast(t("Could not load the demo photo"), { kind: "err" }); }
@@ -120,10 +121,13 @@ function decide(c) {
     h("h2", { class: "block-title", text: c.status === "Fixed" ? t("Is the problem really fixed?") : t("Already fixed?") }),
     h("p", { class: "muted", text: t("Only you can close this complaint. Go to the spot and take a new photo — it is kept as proof next to your first photo.") }),
     h("div", { class: "field" + (errs.photo ? " has-err" : "") }, h("p", { class: "field-label", text: t("New photo at the spot") }), input,
-      res.url ? h("div", { class: "photo-meta" }, h("span", { class: "muted", text: t("Taken {when} · shown next to your first photo", { when: shortDate(new Date(res.takenAt).toISOString(), lang()) }) }),
-          h("button", { type: "button", class: "link-btn", onclick: () => { URL.revokeObjectURL(res.url); Object.assign(res, { blob: null, url: "", takenAt: null }); redraw(); }, text: t("Retake photo") }))
+      res.url ? h("div", { class: "photo-meta" }, h("span", { class: "muted", text: (res.demo ? t("Demo photo") + " · " : "") + t("Taken {when} · shown next to your first photo", { when: shortDate(new Date(res.takenAt).toISOString(), lang()) }) }),
+          res.demo && prefs().demo ? h("button", { type: "button", class: "link-btn", onclick: () => useDemoPhoto(c), text: t("Try another demo photo") }) : null,
+          h("button", { type: "button", class: "link-btn", onclick: () => { URL.revokeObjectURL(res.url); Object.assign(res, { blob: null, url: "", takenAt: null, demo: false, path: "" }); redraw(); }, text: t("Retake photo") }))
         : h("label", { for: "after", class: "drop" + (errs.photo ? " err" : "") }, icon("camera", 28), h("b", { text: t("Take a new photo") })),
-      !res.url && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: useDemoPhoto }, icon("camera", 18), t("Use a demo photo"))) : null,
+      !res.url ? (prefs().demo
+        ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: () => useDemoPhoto(c) }, icon("camera", 18), t("Use a demo photo")))
+        : h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — sample photos and location are available"), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")))) : null,
       errs.photo ? h("p", { class: "field-err", role: "alert", text: errs.photo }) : null),
     h("div", { class: "field" + (errs.loc ? " has-err" : "") }, h("p", { class: "field-label", text: t("Where did you take it?") }),
       res.loc ? h("p", { class: "match " + (dist <= 50 ? "ok" : "far") }, icon(dist <= 50 ? "check" : "info", 18), t("{d} m from your first pin", { d: dist }) + ` · ${t("accuracy {m} m", { m: res.loc.acc })}`)

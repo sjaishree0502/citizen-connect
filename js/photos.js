@@ -91,15 +91,16 @@ export function setImg(img, ref) {
 }
 
 /**
- * Demo mode: turn one of the app's own pictures into a JPEG "photo taken now", so the loop can be
+ * Demo mode: turn a bundled sample photo into a JPEG "photo taken now", so the loop can be
  * shown without a camera. Complaints that use it are marked as demo.
  */
 export async function demoPhoto(path) {
   const img = new Image();
   img.src = path;
   await img.decode();
+  const scale = Math.min(1, 1200 / Math.max(img.naturalWidth || 1200, img.naturalHeight || 800));
   const canvas = document.createElement("canvas");
-  canvas.width = 1200; canvas.height = 800;
+  canvas.width = Math.round((img.naturalWidth || 1200) * scale); canvas.height = Math.round((img.naturalHeight || 800) * scale);
   canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
   const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.8));
   if (!blob) throw new Error("demo-photo");

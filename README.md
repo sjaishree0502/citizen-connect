@@ -125,7 +125,14 @@ The phone camera, GPS and "Install app" need `https`. GitHub Pages gives that fo
 
 Use **one phone or laptop, one browser** (not a private window) for the whole demo, and set the officer PIN beforehand.
 
-**Demo mode:** if you can't take real photos or get GPS indoors, turn on **Demo mode** in the footer. A yellow banner appears, and the Raise and resolve screens get **Use a demo photo** and **Use demo location** buttons. A demo photo counts as taken just now, so it passes the photo-date check. Every complaint that used one is labelled "Demo mode: a sample photo or location was used". Turn it off in the footer afterwards.
+**Demo mode:** if you can't take real photos or get GPS indoors, tap **"Presenting without a camera? Use demo photos"** under any photo box (or the **Demo mode** switch in the footer). A yellow banner appears, and the Raise and resolve screens get **Use a demo photo** and **Use demo location** buttons.
+
+- On **Raise**, a demo photo is a real-world photo of that problem type (pothole, open drain, garbage, …).
+- On **Check & resolve**, it is a real-world photo of the same type **after it was fixed**, picked at random. **Try another demo photo** cycles through them.
+- A demo photo counts as taken just now, so it passes the photo-date check. Every complaint that used one is labelled "Demo mode: a sample photo or location was used".
+- The 48 photos are in `img/demo/` (≈6 MB, loaded only when used, not part of the offline download). They come from Wikimedia Commons under free licences, with authors and licences listed in [`img/demo/CREDITS.md`](img/demo/CREDITS.md).
+
+Turn demo mode off in the footer afterwards.
 
 | # | Who | Show |
 |---|---|---|
@@ -161,6 +168,7 @@ To start again: footer → **Erase data on this device** (tap twice). This delet
 | `manifest.json`, `service-worker.js`, `img/icons/` | Install as an app (including an Android "maskable" icon) and work offline. |
 | `tools-build-sw.py` | Regenerates `service-worker.js` with the current file list and version. |
 | `tests/` | Unit tests and the end-to-end test. |
+| `img/demo/` | Real-world demo photos (problem and fixed) for Demo mode, with `CREDITS.md`. |
 | `docs/screenshots/` | Images for this README (not part of the app). |
 
 ---

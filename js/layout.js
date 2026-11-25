@@ -1,4 +1,4 @@
-// layout.js — the parts every page shares: top bar, header, footer, phone tab bar,
+// layout.js — the parts every page shares: top bar, header, phone menu, footer,
 // language and theme switches, the city menu, and the officer session.
 
 import { h, icon, showPendingToast, toast, readJSON, writeJSON } from "./helpers.js";
@@ -127,22 +127,35 @@ function header(active, officerPage, rerender) {
         tab("raise.html", "raise", t("Raise a complaint")),
         tab("my.html", "my", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
         h("a", { href: isOfficer() ? "officer.html" : "login.html", class: "nav-btn" + (active === "login" ? " on" : "") }, icon("shield", 16), t("Officer login")));
-  const main = h("header", { class: "head" }, h("div", { class: "wrap head-in" }, brand(), nav));
+  const menu = phoneMenu(active, officerPage, need);
+  const main = h("header", { class: "head" }, h("div", { class: "wrap head-in" }, brand(), nav, menu.btn), menu.panel);
   const demo = p.demo ? h("div", { class: "demo-strip", role: "status" }, h("div", { class: "wrap" }, icon("info", 16), t("Demo mode is on — sample photos and location can be used. Turn it off in the footer."))) : null;
   return [util, main, demo].filter(Boolean);
 }
 
-/** Bottom tab bar for phones. */
-function tabbar(active, officerPage) {
-  if (officerPage) return null;
-  const need = store.myTabs().check;
-  const item = (href, key, ico, label, badge) => h("a", { href, class: "tb-item" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null },
-    h("span", { class: "tb-ico" }, icon(ico, 22), badge ? h("span", { class: "tb-badge", text: badge }) : null), h("span", { class: "tb-label", text: label }));
-  return h("nav", { class: "tabbar", "aria-label": t("Main") },
-    item("index.html", "home", "home", t("Home")),
-    item("raise.html", "raise", "plus", t("Raise")),
-    item("my.html", "my", "list", t("My complaints"), need || null),
-    item(isOfficer() ? "officer.html" : "login.html", "login", "shield", t("Officer")));
+/** Hamburger button + drop-down panel for phones and small tablets (the desktop nav hides there). */
+function phoneMenu(active, officerPage, need) {
+  const link = (href, key, ico, label, extra) => h("a", { href, class: "menu-item" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null }, icon(ico, 20), h("span", { class: "menu-label", text: label }), extra);
+  const items = officerPage
+    ? [link("officer.html", "officer", "grid", t("Dashboard")),
+       h("button", { type: "button", class: "menu-item", onclick: () => { setOfficer(false); location.href = "index.html"; } }, icon("out", 20), h("span", { class: "menu-label", text: t("Sign out") }))]
+    : [link("index.html", "home", "home", t("Home")),
+       link("raise.html", "raise", "plus", t("Raise a complaint")),
+       link("my.html", "my", "list", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
+       isOfficer() ? link("officer.html", "officer", "grid", t("Officer dashboard")) : link("login.html", "login", "shield", t("Officer login"))];
+  const panel = h("nav", { id: "site-menu", class: "menu", "aria-label": t("Menu"), hidden: true }, h("div", { class: "wrap menu-in" }, items));
+  const btn = h("button", { type: "button", class: "menu-btn", "aria-label": need && !officerPage ? t("Menu") + " — " + t("{n} need your check", { n: need }) : t("Menu"), "aria-expanded": "false", "aria-controls": "site-menu" },
+    icon("menu", 24), need && !officerPage ? h("span", { class: "menu-badge", "aria-hidden": "true", text: need }) : null);
+  const wide = window.matchMedia("(min-width: 761px)");
+  const open = () => { panel.hidden = false; btn.setAttribute("aria-expanded", "true"); btn.replaceChild(icon("x", 24), btn.firstChild); document.addEventListener("click", outside, true); document.addEventListener("keydown", esc); document.addEventListener("focusin", away); wide.addEventListener("change", close); };
+  const close = () => { panel.hidden = true; btn.setAttribute("aria-expanded", "false"); btn.replaceChild(icon("menu", 24), btn.firstChild); document.removeEventListener("click", outside, true); document.removeEventListener("keydown", esc); document.removeEventListener("focusin", away); wide.removeEventListener("change", close); };
+  const inside = (el) => btn.contains(el) || panel.contains(el);
+  const outside = (e) => { if (!inside(e.target)) close(); };
+  const away = (e) => { if (!inside(e.target)) close(); };
+  const esc = (e) => { if (e.key === "Escape") { close(); btn.focus(); } };
+  btn.addEventListener("click", () => (panel.hidden ? open() : close()));
+  panel.addEventListener("click", (e) => { if (e.target.closest("a, button")) close(); });
+  return { btn, panel };
 }
 
 /** Footer: zones, honesty note, school credit, CM helpline, erase data. */
@@ -200,10 +213,7 @@ export function boot({ page, officer = false, render, title }) {
     skip.textContent = t("Skip to content");
     render(main);
     body.querySelector(".foot")?.remove();
-    body.querySelector(".tabbar")?.remove();
     body.append(footer());
-    const tb = tabbar(page, officer);
-    if (tb) body.append(tb);
   };
   main.classList.add("enter");
   draw();
