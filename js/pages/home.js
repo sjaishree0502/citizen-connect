@@ -1,5 +1,5 @@
 // pages/home.js — Home: banner, example proof card, live counts, track by ID, how it works,
-// problem types, latest verified fixes, first-visit tour.
+// problem types, latest resolved fixes, first-visit tour.
 
 import { h, icon } from "../helpers.js";
 import { t, catName, prefs, setPref, ago } from "../i18n.js";
@@ -18,12 +18,12 @@ function hero() {
     h("div", { class: "proof-head" }, h("b", { text: catName("pothole") }), badge("Fixed")),
     pair("img/street-before.svg", "img/street-after.svg"),
     h("p", { class: "proof-note" }, h("span", { class: "chip", text: t("EXAMPLE") }),
-      h("span", { text: t("The person who reported it taps Yes to close it, or Reopen with a reason.") })));
+      h("span", { text: t("The person who reported it closes it with a new photo, or reopens it with a reason.") })));
   return h("section", { class: "hero" },
     h("img", { class: "hero-sky", src: "img/skyline-a.svg", alt: "", "aria-hidden": "true" }),
     h("div", { class: "wrap hero-in" },
       h("div", { class: "hero-copy" },
-        h("span", { class: "pill", text: t("Pilot: all 15 zones of Greater Chennai") }),
+        h("span", { class: "pill", text: t("Pilot: Greater Chennai (15 zones) and Avadi") }),
         h("h1", { class: "hero-title" }, t("Report it. Fix it."), h("br"), h("span", { class: "accent", text: t("Prove it.") })),
         h("p", { class: "hero-sub" }, t("Raise a street problem in under a minute. When the Corporation fixes it, you check the proof and decide if it is really done.")),
         h("div", { class: "hero-actions" },
@@ -66,8 +66,8 @@ function stats() {
     h("div", { class: "stats" },
       card(c.submitted, t("New"), t("need an officer"), "s-new", "plus"),
       card(c.inprogress, t("In progress"), t("being fixed"), "s-prog", "clock"),
-      card(c.fixed, t("Awaiting check"), t("citizen to verify"), "s-fix", "search"),
-      card(c.verified, t("Verified"), t("closed with proof"), "s-ver", "check"),
+      card(c.fixed, t("Awaiting check"), t("work done, citizen to check"), "s-fix", "search"),
+      card(c.verified, t("Resolved"), t("closed by the citizen"), "s-ver", "check"),
       card(c.reopened, t("Reopened"), t("fix again"), "s-re", "reopen")));
 }
 
@@ -78,8 +78,8 @@ function how() {
     h("h2", { class: "sec-title", text: t("How it works") }),
     h("ol", { class: "how" },
       step(1, t("You report"), t("the problem with a photo and the exact location.")),
-      step(2, t("The officer fixes it"), t("and must upload an after-photo taken at the spot.")),
-      step(3, t("You verify."), t("Only you can close the complaint — or reopen it if it is not fixed."))));
+      step(2, t("The officer follows up"), t("promises a fix date and posts updates until the work is done.")),
+      step(3, t("You resolve it."), t("Only you can close it — with a new photo taken at the spot. Not fixed? Reopen it."))));
 }
 
 /** First 8 problem types + link to the rest. */
@@ -91,7 +91,7 @@ function types() {
       h("a", { href: "raise.html?more=1", class: "type type-more" }, h("span", { class: "more-n", text: "+" + (CATEGORIES.length - 9) }), h("span", { text: t("more problem types") }))));
 }
 
-/** Latest verified fixes from the store. */
+/** Latest resolved fixes from the store. */
 function latest() {
   const done = store.all().filter((c) => c.status === "Verified" && c.afterPhoto).sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 3);
   if (!done.length) return null;
@@ -99,7 +99,7 @@ function latest() {
     h("div", { class: "sec-row" }, h("h2", { class: "sec-title", text: t("Latest proof of fix") }), h("p", { class: "muted", text: t("Every fix here was confirmed by the person who reported it") })),
     h("div", { class: "fixes" }, done.map((c) => h("article", { class: "card fix" },
       pair(c.beforePhoto, c.afterPhoto),
-      h("div", { class: "fix-body" }, h("p", { class: "fix-title" }, h("b", { text: `${c.id} · ${catName(c.cat)}` })), h("p", { class: "muted", text: c.area }), h("p", { class: "ok-line" }, icon("check", 16), t("Verified by citizen")))))));
+      h("div", { class: "fix-body" }, h("p", { class: "fix-title" }, h("b", { text: `${c.id} · ${catName(c.cat)}` })), h("p", { class: "muted", text: c.area }), h("p", { class: "ok-line" }, icon("check", 16), t("Resolved by citizen")))))));
 }
 
 /** First-visit tour (3 short steps). */
@@ -108,8 +108,8 @@ function tour() {
   let i = 0;
   const steps = [
     [t("Raise it in a minute"), t("Pick the problem, add a photo and your location. That's it.")],
-    [t("No proof, no closing"), t("The officer must post an after-photo taken at the same spot.")],
-    [t("You have the final say"), t("Only you can close it. Not fixed? Reopen it with a reason.")],
+    [t("The officer follows up"), t("You see the promised fix date and every update.")],
+    [t("You have the final say"), t("Only you can close it, with a new photo at the spot. Not fixed? Reopen it.")],
   ];
   const close = () => { setPref("tour", true); dlg.remove(); };
   const body = h("div", { class: "tour-body" });

@@ -21,7 +21,7 @@ function rows() {
 /** Next step text for a complaint. */
 function actionLabel(c) {
   if (c.status === "Submitted" || c.status === "Reopened") return t("Start work");
-  if (c.status === "In progress") return t("Mark fixed");
+  if (c.status === "In progress") return t("Follow up");
   return t("View");
 }
 
@@ -57,13 +57,13 @@ function render(main) {
     h("div", { class: "stats stats-o" },
       stat("Submitted", n.submitted, t("New"), t("not started"), "s-new", "plus"),
       stat("In progress", n.inprogress, t("In progress"), t("ward team on it"), "s-prog", "clock"),
-      stat("Fixed", n.fixed, t("Waiting for citizen"), t("after-photo posted"), "s-fix", "search"),
-      stat("Verified", n.verified, t("Verified"), t("closed with proof"), "s-ver", "check"),
+      stat("Fixed", n.fixed, t("Waiting for citizen"), t("work done, citizen to check"), "s-fix", "search"),
+      stat("Verified", n.verified, t("Resolved"), t("closed by the citizen"), "s-ver", "check"),
       stat("Reopened", n.reopened, t("Reopened"), t("fix again"), "s-re", "reopen")),
     h("div", { class: "toolbar" },
       h("p", { class: "muted", text: filter === "all" ? t("Showing all complaints") : t("Showing: {s}", { s: badge(filter, true).textContent }) }),
       h("div", { class: "toolbar-right" }, filter !== "all" ? h("button", { type: "button", class: "btn btn-sm btn-ghost", onclick: () => { filter = "all"; redraw(); }, text: t("Show all") }) : null, viewToggle(view, (v) => { setPref("view", v); redraw(); }))),
-    h("p", { class: "rule" }, icon("info", 16), t("A complaint closes only when the citizen confirms the fix")),
+    h("p", { class: "rule" }, icon("info", 16), t("You follow up; only the citizen closes a complaint, with a new photo at the spot")),
     !shown.length ? empty(n.total ? t("No complaints with this status.") : t("No complaints yet"), n.total ? "" : t("Complaints raised on this device will appear here."))
       : view === "grid" ? h("div", { class: "items grid" }, shown.map(cardEl))
       : h("div", { class: "otable", role: "table", "aria-label": t("Complaints") },

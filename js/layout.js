@@ -6,7 +6,7 @@ import { t, prefs, setPref } from "./i18n.js";
 import { CITIES, ZONES } from "./data.js";
 import * as store from "./store.js";
 
-const OFFICER = "cc.officer", PIN = "cc.officerPin.v1";
+const OFFICER = "cc.officer", PIN = "cc.officerPin.v1", INTRO = "cc.introShown";
 
 /** Is an officer signed in (this browser tab session)? */
 export function isOfficer() {
@@ -57,10 +57,10 @@ function switchGroup(label, items) {
     items.map((it) => h("button", { type: "button", class: "switch-btn", "aria-pressed": it.on ? "true" : "false", "aria-label": it.aria || null, title: it.aria || null, lang: it.lang || null, onclick: it.onclick }, it.content)));
 }
 
-/** City chooser in the top bar (only Greater Chennai is live). */
+/** City chooser in the top bar (Greater Chennai and Avadi are live). */
 function cityMenu(rerender) {
   const wrap = h("div", { class: "city" });
-  const btn = h("button", { type: "button", class: "city-btn", "aria-haspopup": "listbox", "aria-expanded": "false" }, icon("pin", 16), t("Greater Chennai"), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
+  const btn = h("button", { type: "button", class: "city-btn", "aria-haspopup": "listbox", "aria-expanded": "false" }, icon("pin", 16), t("Chennai & Avadi"), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
   const list = h("ul", { class: "city-list", role: "listbox", "aria-label": t("Choose your city corporation"), hidden: true });
   const tagText = { live: "Live", next: "Coming next", planned: "Planned" };
   for (const c of CITIES) {
@@ -68,7 +68,7 @@ function cityMenu(rerender) {
       onclick: () => {
         close();
         if (c.state !== "live") {
-          toast(c.state === "next" ? t("{city} is coming next — the pilot runs in Greater Chennai first", { city: t(c.en) }) : t("{city} is planned — the pilot runs in Greater Chennai first", { city: t(c.en) }), { kind: "info" });
+          toast(c.state === "next" ? t("{city} is coming next — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }) : t("{city} is planned — the pilot runs in Greater Chennai and Avadi first", { city: t(c.en) }), { kind: "info" });
         }
       } }, h("span", { text: t(c.en) }), h("span", { class: "tag tag-" + c.state, text: t(tagText[c.state]) }))));
   }
@@ -81,10 +81,19 @@ function cityMenu(rerender) {
   return wrap;
 }
 
+/** True only the first time it is called in this browser tab (so the logo intro plays once, not on every redraw). */
+function firstIntro() {
+  try {
+    if (sessionStorage.getItem(INTRO)) return false;
+    sessionStorage.setItem(INTRO, "1");
+  } catch { /* ignore */ }
+  return true;
+}
+
 /** Logo + name, links home. */
 function brand() {
   return h("a", { href: "index.html", class: "brand" },
-    h("img", { src: "img/logo-96.png", alt: "", width: 44, height: 44, class: "brand-logo" }),
+    h("img", { src: "img/logo-96.png", alt: "", width: 44, height: 44, class: "brand-logo" + (firstIntro() ? " intro" : "") }),
     h("span", { class: "brand-text" },
       h("span", { class: "brand-name" }, "CITIZEN ", h("span", { class: "brand-accent", text: "CONNECT" })),
       h("span", { class: "brand-sub" }, h("span", { lang: "ta", text: "குடிமக்கள் இணைப்பு" }), h("span", { class: "dash", "aria-hidden": "true" }), h("span", { text: "NAMMA OORU FIX" }))));
@@ -95,8 +104,8 @@ function header(active, officerPage, rerender) {
   const p = prefs();
   const dark = document.documentElement.dataset.theme === "dark";
   const left = officerPage
-    ? h("div", { class: "util-left" }, icon("shield", 16), h("span", { class: "util-strong", text: t("Officer mode · Greater Chennai") }))
-    : h("div", { class: "util-left" }, cityMenu(rerender), h("span", { class: "util-muted hide-sm", text: t("Pilot city · Avadi and Tambaram next") }));
+    ? h("div", { class: "util-left" }, icon("shield", 16), h("span", { class: "util-strong", text: t("Officer mode · Greater Chennai and Avadi") }))
+    : h("div", { class: "util-left" }, cityMenu(rerender), h("span", { class: "util-muted hide-sm", text: t("Live pilot · Tambaram coming next") }));
   const util = h("div", { class: "util" }, h("div", { class: "wrap util-in" }, left,
     h("div", { class: "util-right" },
       switchGroup(t("Language"), [
@@ -139,8 +148,8 @@ function tabbar(active, officerPage) {
 function footer() {
   return h("footer", { class: "foot" }, h("div", { class: "wrap foot-in" },
     h("div", {},
-      h("p", { class: "foot-title", text: t("Covers all 15 zones of Greater Chennai") }),
-      h("p", { class: "foot-zones", text: ZONES.map((z) => t(z.en)).join(" · ") })),
+      h("p", { class: "foot-title", text: t("Covers all 15 zones of Greater Chennai, and Avadi City Corporation") }),
+      h("p", { class: "foot-zones", text: ZONES.map((z) => t(z.en)).join(" · ") + " · " + t("Avadi") })),
     h("div", { class: "foot-meta" },
       h("p", { text: t("Student prototype — not an official Greater Chennai Corporation app.") }),
       h("p", { text: t("For other government services, call 1100 (CM Helpline).") }),

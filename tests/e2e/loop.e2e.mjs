@@ -1,5 +1,6 @@
 // End-to-end test of the whole complaint loop in headless Chrome:
-// raise → officer PIN → start work (fix date) → mark fixed (proof) → reopen → overdue → fix again → verify → erase.
+// raise (Avadi) → officer PIN → start work (fix date) → follow-up update → work done → citizen reopens
+// → overdue → work done → citizen resolves with a new photo → erase. Also the logo intro and city menu.
 // Run: npm install && npm run test:e2e   (set CHROME_PATH if Chrome is not in the default macOS place)
 
 import { createServer } from "node:http";
@@ -58,14 +59,6 @@ const click = async (label, sel = "button") => {
 };
 const upload = async (sel, file) => { await (await page.$(sel)).uploadFile(file); await sleep(800); };
 const type = async (sel, value) => { await page.click(sel, { clickCount: 3 }); await page.type(sel, value); };
-const officerFix = async (note) => {
-  await upload("#after", await freshPhoto());
-  await click("Use my location");
-  await sleep(600);
-  await type("#onote", note);
-  await click("Mark fixed");
-  await sleep(500);
-};
 
 try {
   console.log("Fresh device");
@@ -73,15 +66,24 @@ try {
   await page.evaluate(() => document.querySelector(".tour .btn-quiet")?.click());
   check(!(await has("Latest proof of fix")) && !/CHN-\d/.test(await text()), "home shows no complaints");
   check((await page.$$eval(".stats .stat-n", (els) => els.map((e) => e.textContent))).every((n) => n === "0"), "home counts are all zero");
+  check((await page.$(".brand-logo.intro")) !== null, "logo intro plays on the first page");
+  await click("தமிழ்");
+  check((await page.$(".brand-logo.intro")) === null, "logo intro does not replay after switching language");
+  await click("EN");
+  await page.click(".city-btn");
+  const cities = await page.$$eval(".city-opt", (els) => els.map((e) => e.innerText.replace(/\s+/g, " ")));
+  check(cities.includes("Avadi Live") && cities.includes("Greater Chennai Live") && cities.includes("Tambaram Coming next"), "city menu: Chennai and Avadi live, Tambaram next");
   await go("my.html");
+  check((await page.$(".brand-logo.intro")) === null, "logo intro does not replay on the next page");
   check(await has("You have not raised any complaints yet"), "My complaints shows the first-time empty state");
 
-  console.log("Citizen raises a complaint");
+  console.log("Citizen raises a complaint in Avadi");
   await go("raise.html");
   await page.click(".cat");
   await upload("#photo", before);
   await click("Use my location");
   await sleep(600);
+  check(await has("Avadi City Corporation"), "an Avadi pin is labelled Avadi City Corporation");
   await type("#area", "Kamaraj Nagar, Avadi");
   await click("Submit complaint");
   await page.waitForNavigation({ waitUntil: "networkidle0" });
@@ -105,28 +107,35 @@ try {
   await click("In 3 days");
   await click("Start work");
   check(await has("Fix promised by"), "Start work records the promised date");
-  await go("verify.html?id=CHN-001");
-  check(await has("Work has started"), "[In progress] citizen sees the promise");
 
-  console.log("Officer marks it fixed");
+  console.log("Officer follows up (no photos)");
+  check((await page.$('input[type="file"]')) === null, "officer page has no photo upload");
+  await click("Post update");
+  check(await has("Write what was done (at least 5 characters)."), "an update needs a note");
+  await type("#onote", "Material ordered, crew visits Friday");
+  await click("In 1 week");
+  await click("Post update");
+  check((await has("Officer update")) && (await has("Material ordered, crew visits Friday")), "update appears in the timeline");
+  await go("verify.html?id=CHN-001");
+  check((await has("Material ordered, crew visits Friday")) && (await has("The officer is working on it")), "[In progress] citizen sees the update and the promise");
   await go("update.html?id=CHN-001");
-  await click("Mark fixed");
-  check(await has("An after-photo is required"), "Mark fixed without a photo is blocked");
-  await upload("#after", old);
-  check(await has("taken before the complaint was raised"), "an old photo is refused");
-  await officerFix("Drain cleared and cover replaced");
-  check(await has("Waiting for the citizen to check"), "marked fixed with photo, GPS and note");
+  await type("#onote", "Drain cleared and cover replaced");
+  await click("Work done");
+  check(await has("They will check it at the spot and resolve it with a new photo"), "officer marks work done and waits for the citizen");
+  check(!(await has("Mark resolved")), "officer cannot resolve the complaint");
 
-  console.log("Citizen reopens");
+  console.log("Citizen checks and reopens");
+  await go("my.html");
+  check((await page.$eval(".count", (e) => e.textContent).catch(() => "")) === "1", "nav badge shows 1 complaint to check");
   await go("verify.html?id=CHN-001");
-  check((await has("Is the problem really fixed?")) && (await has("Location matched")) && (await has("After-photo taken:")), "citizen sees the proof");
-  await click("No, reopen it");
+  check((await has("The officer says the work is done")) && (await has("Drain cleared and cover replaced")), "citizen sees the officer's work-done note");
+  await click("Not fixed — reopen");
   await type("#reason", "Still overflowing near the gate");
   await click("Send back to officer");
   check(await has("Reopened · sent back to the officer"), "reopened with a reason");
-  check(!(await has("Location matched")) && (await page.$$(".tl-photo")).length === 1, "old fix details cleared, old after-photo kept in the timeline");
+  check(!(await has("Officer’s note:")), "the old work-done note is cleared");
 
-  console.log("Officer misses the date, then fixes it again");
+  console.log("Officer misses the date, then finishes");
   await go("update.html?id=CHN-001");
   check(await has("Still overflowing near the gate"), "officer sees the reopen reason");
   await click("Today");
@@ -140,18 +149,35 @@ try {
   check(await has("Overdue"), "[Overdue] officer dashboard flags it");
   await go("verify.html?id=CHN-001");
   check(await has("The officer has missed the promised date"), "[Overdue] citizen is told");
+  const earlyPhoto = await freshPhoto(); // taken before the officer says "work done"
+  await sleep(1100);
   await go("update.html?id=CHN-001");
-  await officerFix("Drain fully desilted this time");
-  check(await has("Waiting for the citizen to check"), "second fix posted");
+  await type("#onote", "Drain fully desilted this time");
+  await click("Work done");
 
-  console.log("Citizen closes it");
+  console.log("Citizen resolves it with a new photo");
   await go("verify.html?id=CHN-001");
-  check(await has("days late"), "citizen sees the fix was late");
-  await click("Yes, it's fixed");
+  check(await has("days late"), "citizen sees the work was done late");
+  await click("Mark resolved");
+  check(await has("Take a new photo at the spot"), "Mark resolved without a photo is blocked");
+  await upload("#after", old);
+  check(await has("taken before the officer finished the work"), "an old photo is refused");
+  await upload("#after", earlyPhoto);
+  check(await has("taken before the officer finished the work"), "a photo from before 'work done' is refused");
+  await upload("#after", await freshPhoto());
+  check((await page.$(".cmp")) !== null, "the new photo is shown next to the first photo");
+  await click("Use my location");
+  await sleep(600);
+  check(await has("m from your first pin"), "distance from the first pin is shown");
+  await click("Mark resolved");
   await sleep(5500); // let the Undo window pass
-  check(await has("CHN-001 is closed"), "verified and closed");
+  check((await has("Resolved")) && (await has("CHN-001 is closed with your photo")), "citizen resolved and closed it");
+  check(await has("Resolution photo taken:"), "the resolution photo time is recorded");
+  await go("officer.html");
+  await click("Resolved");
+  check(await has("CHN-001"), "[Resolved] officer sees it closed");
   await go("index.html");
-  check(await has("Latest proof of fix"), "home shows the verified fix");
+  check(await has("Latest proof of fix"), "home shows the resolved fix");
 
   console.log("Erase data");
   await click("Erase data on this device");

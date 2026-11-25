@@ -2,8 +2,8 @@
 // Nothing is saved until every check in validate.js passes.
 
 import { h, icon, toast, toastNext, distanceM, reducedMotion } from "../helpers.js";
-import { t, catName, zoneName } from "../i18n.js";
-import { CATEGORIES, zoneFor } from "../data.js";
+import { t, catName, placeName } from "../i18n.js";
+import { CATEGORIES, placeFor } from "../data.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkRaise, checkLocation, LIMITS } from "../validate.js";
@@ -18,6 +18,7 @@ const form = {
 };
 let showMore = q.get("more") === "1" || CATEGORIES.findIndex((c) => c.key === form.cat) >= 9;
 let tried = false, sending = false, locating = false, photoErr = "", locErr = "";
+const fresh = { photo: false, loc: false }; // pop in once when just added, not on every redraw
 let redraw = () => {};
 
 /** Errors to show (only after the first Submit attempt, or for the photo/location right away). */
@@ -64,7 +65,7 @@ function photoStep(err) {
     toast(t("Photo added"));
   });
   const body = form.photo
-    ? h("div", { class: "photo-prev" }, h("img", { src: form.photoURL, alt: t("Your photo"), width: 640, height: 400 }),
+    ? h("div", { class: "photo-prev" }, h("img", { src: form.photoURL, alt: t("Your photo"), width: 640, height: 400, class: fresh.photo ? "pop" : null }),
         h("div", { class: "photo-meta" }, h("span", { class: "muted", text: form.photoInfo }), h("button", { type: "button", class: "link-btn", onclick: () => { form.photo = null; form.photoURL = ""; redraw(); toast(t("Photo removed")); } }, t("Remove photo"))))
     : h("label", { for: "photo", class: "drop" + (err ? " err" : "") }, icon("camera", 32), h("b", { text: t("Take or choose a photo") }), h("span", { id: "photo-hint", class: "muted", text: t("JPG, PNG or WebP · under 15 MB · at least 200 × 200") }));
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-photo", "aria-labelledby": "h-photo" },
@@ -77,6 +78,7 @@ function photoStep(err) {
 function setPhoto(blob, info, takenAt) {
   if (form.photoURL) URL.revokeObjectURL(form.photoURL);
   form.photo = blob; form.photoURL = URL.createObjectURL(blob); form.photoInfo = info; form.photoTakenAt = takenAt; photoErr = "";
+  fresh.photo = true;
   redraw();
 }
 
@@ -94,10 +96,11 @@ function locate() {
 function setLoc(loc) {
   const err = checkLocation(loc);
   if (err) { form.loc = null; locErr = t(err); redraw(); toast(locErr, { kind: "err" }); return; }
-  form.loc = { ...loc, zone: zoneFor(loc.lat, loc.lng).n };
+  form.loc = { ...loc, ...placeFor(loc.lat, loc.lng) };
   locErr = "";
+  fresh.loc = true;
   redraw();
-  toast(t("Location captured · {zone}", { zone: zoneName(form.loc.zone) }));
+  toast(t("Location captured · {zone}", { zone: placeName(form.loc) }));
 }
 
 /** An open complaint of the same type within 50 m, if any. */
@@ -110,9 +113,9 @@ function nearby() {
 function locStep(err) {
   const near = nearby();
   const body = form.loc
-    ? h("div", { class: "loc-ok" }, h("div", { class: "loc-row" }, h("b", { text: t("Location captured · inside Chennai") }),
+    ? h("div", { class: "loc-ok" + (fresh.loc ? " pop" : "") }, h("div", { class: "loc-row" }, h("b", { text: t("Location captured · inside the pilot area") }),
         h("a", { class: "link", href: `https://www.openstreetmap.org/?mlat=${form.loc.lat}&mlon=${form.loc.lng}#map=18/${form.loc.lat}/${form.loc.lng}`, target: "_blank", rel: "noopener noreferrer", text: t("View on map") })),
-        h("p", { text: `${form.loc.lat.toFixed(4)}, ${form.loc.lng.toFixed(4)} · ${zoneName(form.loc.zone)}${form.loc.acc ? " · " + t("accuracy {m} m", { m: form.loc.acc }) : ""}` }))
+        h("p", { text: `${form.loc.lat.toFixed(4)}, ${form.loc.lng.toFixed(4)} · ${placeName(form.loc)}${form.loc.acc ? " · " + t("accuracy {m} m", { m: form.loc.acc }) : ""}` }))
     : h("div", { class: "loc-btns" },
         h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")));
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-loc", "aria-labelledby": "h-loc" },
@@ -147,7 +150,7 @@ function submitBox() {
   readyEl = h("span", { class: "ready", text: readyText() });
   return h("section", { class: "card block submit-box" },
     h("div", { class: "row-between" }, h("h2", { class: "block-title", text: t("Ready to submit?") }), readyEl),
-    h("p", { class: "muted" }, t("After you submit, it appears at the top of"), " ", h("b", { text: t("My complaints") }), t(". When the officer marks it fixed, you will be asked to check the after-photo.")),
+    h("p", { class: "muted" }, t("After you submit, it appears at the top of"), " ", h("b", { text: t("My complaints") }), t(". The officer posts updates here. When the work is done, you take a new photo at the spot to resolve it.")),
     h("button", { type: "submit", class: "btn btn-primary btn-lg btn-block" + (sending ? " is-busy" : ""), disabled: sending || null },
       sending ? h("span", { class: "spinner", "aria-hidden": "true" }) : null, sending ? t("Sending to the ward team…") : t("Submit complaint"), sending ? null : icon("arrow", 20)),
     h("div", { class: "row-between small-actions" },
@@ -180,7 +183,7 @@ async function submit(e) {
   const key = "p-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   try {
     await putPhoto(key, form.photo);
-    const c = store.create({ cat: form.cat, photoRef: "idb:" + key, photoTakenAt: form.photoTakenAt, lat: form.loc.lat, lng: form.loc.lng, acc: form.loc.acc, area: form.area, note: form.note, zone: form.loc.zone });
+    const c = store.create({ cat: form.cat, photoRef: "idb:" + key, photoTakenAt: form.photoTakenAt, lat: form.loc.lat, lng: form.loc.lng, acc: form.loc.acc, area: form.area, note: form.note, city: form.loc.city, zone: form.loc.zone });
     toastNext(t("Complaint {id} registered — it is at the top of your list", { id: c.id }));
     setTimeout(() => { location.href = `my.html?new=${encodeURIComponent(c.id)}`; }, reducedMotion() ? 0 : 700);
   } catch (err) {
@@ -199,6 +202,7 @@ function render(main) {
   main.replaceChildren(h("div", { class: "wrap page" },
     pageHead(t("Raise a complaint"), t("Four quick steps. A photo and the location are required so the ward team can find it.")),
     steps(), f));
+  fresh.photo = fresh.loc = false;
 }
 
 const draw = boot({ page: "raise", render, title: () => t("Raise a complaint") });

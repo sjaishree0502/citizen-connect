@@ -2,7 +2,7 @@
 // list/grid toggle, before/after compare, timeline, form field wrapper.
 
 import { h, icon, shortDate, dayDate, distanceM } from "./helpers.js";
-import { t, lang, catName, statusLabel, statusClass, ago, zoneName } from "./i18n.js";
+import { t, lang, catName, statusLabel, statusClass, ago, placeName } from "./i18n.js";
 import { setImg } from "./photos.js";
 
 /** Status badge. */
@@ -22,10 +22,11 @@ export function dueInfo(c, now = Date.now()) {
   return now > Date.parse(c.dueBy) ? { late: true, text: t("Overdue · promised by {d}", { d }) } : { late: false, text: t("Fix promised by {d}", { d }) };
 }
 
-/** Was the fix done by the promised date? { text, late } or null. */
+/** Was the work done by the promised date (officer's "work done", or the citizen resolving it)? { text, late } or null. */
 export function fixTiming(c) {
-  if (!c.dueBy || !c.fixedAt) return null;
-  const d = dayDate(c.dueBy, lang()), lateDays = Math.ceil((Date.parse(c.fixedAt) - Date.parse(c.dueBy)) / 86400000);
+  const done = c.fixedAt || c.resolvedAt;
+  if (!c.dueBy || !done) return null;
+  const d = dayDate(c.dueBy, lang()), lateDays = Math.ceil((Date.parse(done) - Date.parse(c.dueBy)) / 86400000);
   if (lateDays <= 0) return { late: false, text: t("Fixed on time (promised by {d})", { d }) };
   return { late: true, text: lateDays === 1 ? t("Fixed 1 day late (promised by {d})", { d }) : t("Fixed {n} days late (promised by {d})", { n: lateDays, d }) };
 }
@@ -33,7 +34,7 @@ export function fixTiming(c) {
 /** One complaint for "My complaints" (list row or grid card share the same markup). */
 export function complaintItem(c, { isNew = false, onWithdraw = null } = {}) {
   const action = c.status === "Fixed"
-    ? h("a", { href: `verify.html?id=${encodeURIComponent(c.id)}`, class: "btn btn-sm btn-primary" }, t("Check the fix"), icon("arrow", 16))
+    ? h("a", { href: `verify.html?id=${encodeURIComponent(c.id)}`, class: "btn btn-sm btn-primary" }, t("Check & resolve"), icon("arrow", 16))
     : h("a", { href: `verify.html?id=${encodeURIComponent(c.id)}`, class: "btn btn-sm btn-ghost", text: t("View") });
   return h("article", { class: "item" + (c.status === "Fixed" ? " item-attn" : "") + (isNew ? " item-new" : "") },
     h("div", { class: "item-thumb" }, photo(c.beforePhoto, catName(c.cat))),
@@ -46,6 +47,7 @@ export function complaintItem(c, { isNew = false, onWithdraw = null } = {}) {
       h("p", { class: "item-meta", text: `${c.area} · ${ago(c.createdAt)}` }),
       c.status === "Reopened" ? h("p", { class: "item-note warn", text: t("Reopened by you · waiting for the officer to start again") }) : null,
       c.status === "Submitted" ? h("p", { class: "item-note muted", text: t("Waiting for an officer to start work") }) : null,
+      c.status === "Fixed" ? h("p", { class: "item-note", text: t("The officer says the work is done — check it at the spot") }) : null,
       dueInfo(c) ? h("p", { class: "item-note" + (dueInfo(c).late ? " warn" : ""), text: dueInfo(c).text }) : null,
       h("div", { class: "item-actions" }, action,
         c.status === "Submitted" && onWithdraw ? h("button", { type: "button", class: "btn btn-sm btn-quiet", onclick: () => onWithdraw(c) }, t("Withdraw")) : null)));
@@ -123,7 +125,7 @@ export function pair(beforeRef, afterRef) {
 
 /** Timeline of what happened to a complaint. */
 export function timeline(c) {
-  const label = { Submitted: "Submitted", "In progress": "In progress", Fixed: "Fixed — after-photo posted", Verified: "Verified by citizen", Reopened: "Reopened by citizen", Withdrawn: "Withdrawn" };
+  const label = { Submitted: "Submitted", "In progress": "Work started", Update: "Officer update", Fixed: "Officer: work done", Verified: "Resolved by citizen · photo at the spot", Reopened: "Reopened by citizen", Withdrawn: "Withdrawn" };
   return h("ol", { class: "tl" }, (c.history || []).map((e) =>
     h("li", { class: "tl-item tl-" + e.status.toLowerCase().replace(/\s+/g, "") },
       h("span", { class: "tl-dot", "aria-hidden": "true" }),
@@ -135,17 +137,17 @@ export function timeline(c) {
         e.photo ? photo(e.photo, t("After photo"), "tl-photo") : null))));
 }
 
-/** Location match line (after-photo distance from the citizen's pin). */
+/** Location match line (how far the citizen's resolution photo was taken from the original pin). */
 export function locationMatch(c) {
   if (typeof c.afterLat !== "number") return null;
   const d = distanceM(c.lat, c.lng, c.afterLat, c.afterLng);
   const ok = d <= 50;
   return h("p", { class: "match " + (ok ? "ok" : "far") }, icon(ok ? "check" : "info", 18),
-    h("span", {}, h("b", { text: ok ? t("Location matched") : t("Location is far from the pin") }), " " + t("— the after-photo was taken {d} m from your pin", { d }) + (typeof c.afterAcc === "number" ? ` (${t("accuracy {m} m", { m: c.afterAcc })})` : "")));
+    h("span", {}, h("b", { text: ok ? t("Location matched") : t("Location is far from the pin") }), " " + t("— the resolution photo was taken {d} m from the first pin", { d }) + (typeof c.afterAcc === "number" ? ` (${t("accuracy {m} m", { m: c.afterAcc })})` : "")));
 }
 
-/** "Anna Nagar · Zone 8" line. */
-export const zoneLine = (c) => zoneName(c.zone);
+/** "Anna Nagar · Zone 8" or "Avadi City Corporation" line. */
+export const zoneLine = (c) => placeName(c);
 
 /** Page heading block. */
 export function pageHead(title, sub, right = null) {

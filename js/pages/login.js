@@ -64,7 +64,7 @@ function render(main) {
     h("form", { class: "card block login", novalidate: true, onsubmit: submit },
       h("span", { class: "login-ico" }, icon("shield", 28)),
       h("h1", { class: "page-title", text: setup ? t("Set up officer PIN") : t("Officer login") }),
-      h("p", { class: "muted", text: setup ? t("No officer PIN is set on this device yet. Choose a 4-digit PIN for the ward team.") : t("For the ward team of Greater Chennai.") }),
+      h("p", { class: "muted", text: setup ? t("No officer PIN is set on this device yet. Choose a 4-digit PIN for the ward team.") : t("For ward teams in Greater Chennai and Avadi.") }),
       field({ id: "pin", label: setup ? t("New 4-digit PIN") : t("4-digit PIN"), control: first, error: setup ? "" : err }),
       setup ? field({ id: "pin2", label: t("Type the PIN again"), control: pinInput("pin2", pin2, (v) => { pin2 = v; }, "new-password"), error: err }) : null,
       h("button", { type: "submit", class: "btn btn-primary btn-lg btn-block", text: setup ? t("Save PIN and sign in") : t("Sign in") }),

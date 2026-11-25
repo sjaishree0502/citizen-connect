@@ -37,13 +37,16 @@ export function zoneName(n) {
   return z ? t("{name} · Zone {n}", { name: t(z.en), n }) : "";
 }
 
+/** Where a complaint is: "Avadi City Corporation" or "Anna Nagar · Zone 8" (older complaints have no city). */
+export const placeName = (c) => (c.city === "avadi" ? t("Avadi City Corporation") : zoneName(c.zone));
+
 /** Status shown to people (the badge text). */
 export function statusLabel(status, forOfficer = false) {
   const map = {
     Submitted: "New",
     "In progress": "In progress",
-    Fixed: forOfficer ? "Waiting for citizen" : "Fixed — check it",
-    Verified: "Verified",
+    Fixed: forOfficer ? "Waiting for citizen" : "Work done — check it",
+    Verified: "Resolved",
     Reopened: "Reopened",
     Withdrawn: "Withdrawn",
   };

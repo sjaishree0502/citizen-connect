@@ -1,7 +1,7 @@
 // store.js — complaints saved in localStorage. Pages read and change complaints only through here.
 
 import { readJSON, writeJSON } from "./helpers.js";
-import { applyMove, bucket } from "./rules.js";
+import { applyMove, applyUpdate, bucket } from "./rules.js";
 import { clearPhotos } from "./photos.js";
 
 const KEY = "cc.complaints.v2", NEXT = "cc.nextId.v2";
@@ -52,10 +52,10 @@ function takeId() {
 }
 
 /** Create a new complaint from a validated form; returns the saved complaint. */
-export function create({ cat, photoRef, photoTakenAt, lat, lng, acc, area, note, zone }) {
+export function create({ cat, photoRef, photoTakenAt, lat, lng, acc, area, note, city, zone }) {
   const now = new Date().toISOString();
   const c = {
-    id: takeId(), cat, area: area.trim(), zone, lat, lng, acc: acc || null, note: (note || "").trim(), status: "Submitted", mine: true,
+    id: takeId(), cat, area: area.trim(), city, zone, lat, lng, acc: acc || null, note: (note || "").trim(), status: "Submitted", mine: true,
     beforePhoto: photoRef, beforeTakenAt: photoTakenAt || null, afterPhoto: null, officerNote: "", afterLat: null, afterLng: null,
     reopenCount: 0, reText: "", createdAt: now, updatedAt: now,
     history: [{ status: "Submitted", at: now, by: "citizen", note: "" }],
@@ -75,6 +75,16 @@ export function move(id, to, actor, extra = {}) {
   list[i] = applyMove(prev, to, actor, extra);
   if (!saveAll(list)) throw new Error("storage-full");
   return { updated: list[i], previous: prev };
+}
+
+/** Add an officer follow-up to a complaint's timeline; returns the updated complaint. */
+export function update(id, actor, data) {
+  const list = all();
+  const i = list.findIndex((c) => c.id === id);
+  if (i < 0) throw new Error("not-found");
+  list[i] = applyUpdate(list[i], actor, data);
+  if (!saveAll(list)) throw new Error("storage-full");
+  return list[i];
 }
 
 /** Put back an earlier copy of a complaint (used by Undo). */

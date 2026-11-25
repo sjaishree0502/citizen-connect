@@ -45,7 +45,7 @@ export function checkLocation(loc) {
   }
   const b = PILOT_BOX;
   if (loc.lat < b.latMin || loc.lat > b.latMax || loc.lng < b.lngMin || loc.lng > b.lngMax) {
-    return "This place is outside the pilot area (Greater Chennai).";
+    return "This place is outside the pilot area (Greater Chennai and Avadi).";
   }
   return "";
 }

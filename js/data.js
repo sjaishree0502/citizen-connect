@@ -1,4 +1,5 @@
 // data.js — fixed lists: problem types, Chennai zones, cities, pilot area.
+// The pilot runs in two corporations: Greater Chennai (15 zones) and Avadi.
 
 /** The 14 problem types. `key` is stored; `scene` is the animated picture file. */
 export const CATEGORIES = [
@@ -39,8 +40,11 @@ export const ZONES = [
   { n: 15, en: "Sholinganallur", lat: 12.901, lng: 80.227 },
 ];
 
-/** Pilot area box (Greater Chennai). Points outside are refused. */
+/** Pilot area box (Greater Chennai and Avadi). Points outside are refused. */
 export const PILOT_BOX = { latMin: 12.8, latMax: 13.25, lngMin: 80.05, lngMax: 80.35 };
+
+/** Avadi City Corporation (approximate box: Avadi, Pattabiram, Thirumullaivoyal). Checked before the Chennai zones. */
+export const AVADI_BOX = { latMin: 13.085, latMax: 13.17, lngMin: 80.05, lngMax: 80.135 };
 
 /** Nearest zone to a point (simple, good enough for a prototype). */
 export function zoneFor(lat, lng) {
@@ -52,13 +56,20 @@ export function zoneFor(lat, lng) {
   return best;
 }
 
+/** Which corporation (and Chennai zone) a GPS point belongs to: { city: "avadi" | "chennai", zone }. */
+export function placeFor(lat, lng) {
+  const a = AVADI_BOX;
+  if (lat >= a.latMin && lat <= a.latMax && lng >= a.lngMin && lng <= a.lngMax) return { city: "avadi", zone: null };
+  return { city: "chennai", zone: zoneFor(lat, lng).n };
+}
+
 export const CITIES = [
   { en: "Greater Chennai", state: "live" },
-  { en: "Avadi", state: "next" },
+  { en: "Avadi", state: "live" },
   { en: "Tambaram", state: "next" },
   { en: "Madurai", state: "planned" },
   { en: "Coimbatore", state: "planned" },
 ];
 
-/** Worst GPS accuracy (metres) accepted for the officer's after-photo location. */
+/** Worst GPS accuracy (metres) accepted for the citizen's resolution photo location. */
 export const MAX_FIX_ACCURACY = 150;
