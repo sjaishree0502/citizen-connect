@@ -70,11 +70,14 @@ button { cursor: pointer; }
 .util { position: relative; z-index: 61; background: var(--navy-deep); color: #C9D5F5; font-size: 13.5px; } /* above .head (z-index 60 on phones), so the city menu opens over it */
 .util-in { min-height: 44px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .util-left, .util-right { display: flex; align-items: center; gap: 14px; }
+.util-left { flex: 1 1 auto; min-width: 0; } .util-right { flex: none; } /* the switches keep their size; the city name gives way */
 .util-strong { color: #fff; font-weight: 600; }
 .util-left .ico { color: var(--yellow); }
 .util-muted { color: #8EA2D6; }
-.city { position: relative; }
-.city-btn { background: none; border: 0; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0; white-space: nowrap; }
+.city { position: relative; min-width: 0; }
+.city-btn { background: none; border: 0; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0; white-space: nowrap; max-width: 100%; min-width: 0; }
+.city-btn .ico, .city-btn .caret { flex: none; }
+.city-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* long (Tamil) names end in "…" instead of running under the switches */
 .city-btn .ico { color: var(--yellow); }
 .city-list { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; min-width: 270px; list-style: none; margin: 0; padding: 6px; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.25); animation: pop .18s ease-out; }
 .city-opt { width: 100%; min-height: 44px; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; font-weight: 600; text-align: left; }
@@ -440,6 +443,7 @@ button.stat.on { border-color: var(--link); box-shadow: 0 0 0 2px var(--link); }
 .single img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
 .facts { font-size: 14.5px; gap: 8px; }
 .decide .two, .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.two > .btn { white-space: normal; min-width: 0; line-height: 1.25; padding-top: 8px; padding-bottom: 8px; text-align: center; } /* long (Tamil) labels wrap inside the button */
 .tl { list-style: none; margin: 0; padding: 0; display: grid; }
 .tl-item { position: relative; display: flex; gap: 12px; padding-bottom: 14px; }
 .tl-item:not(:last-child)::before { content: ""; position: absolute; left: 7px; top: 18px; bottom: 0; width: 2px; background: var(--line-2); }
@@ -462,7 +466,7 @@ button.stat.on { border-color: var(--link); box-shadow: 0 0 0 2px var(--link); }
 .ohead { border-top: 0; background: var(--raised); font-size: 12.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .ohead:hover { background: var(--raised); }
 .orow.reo { box-shadow: inset 4px 0 0 var(--red); }
-.o-id { display: grid; } .o-cat { color: var(--muted); font-size: 14px; }
+.o-id { display: grid; } .o-id b { white-space: nowrap; } .o-cat { color: var(--muted); font-size: 14px; }
 .o-st { display: grid; gap: 4px; justify-items: start; }
 .o-act { justify-self: end; }
 .ocard { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; text-decoration: none; color: var(--ink); transition: transform .15s; }
@@ -538,7 +542,7 @@ button.stat.on { border-color: var(--link); box-shadow: 0 0 0 2px var(--link); }
   .step small { display: none; }
   .item { grid-template-columns: 96px minmax(0, 1fr); gap: 10px; }
   .two, .decide .two { grid-template-columns: 1fr; }
-  .tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; margin: 0 -14px; padding-left: 14px; padding-right: 14px; scrollbar-width: none; }
+  .tabs { gap: 6px; } /* tabs wrap onto a second row on phones, so none is cut off at the edge */
   .tab { flex: none; }
   .block { padding: 16px; }
   .sticker { font-size: 14px; }

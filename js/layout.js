@@ -68,7 +68,7 @@ function cityMenu(rerender) {
   const chosen = prefs().city;
   const wrap = h("div", { class: "city" });
   const btn = h("button", { type: "button", class: "city-btn", "aria-haspopup": "listbox", "aria-expanded": "false", "aria-label": t("City: {city}. Change city", { city: cityName(chosen) }) },
-    icon("pin", 16), cityName(chosen), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
+    icon("pin", 16), h("span", { class: "city-name", text: cityName(chosen) }), h("span", { class: "caret", "aria-hidden": "true", text: "▾" }));
   const list = h("ul", { class: "city-list", role: "listbox", "aria-label": t("Choose your city corporation"), hidden: true });
   const tagText = { live: "Live", next: "Coming next", planned: "Planned" };
   const choose = (c) => {
