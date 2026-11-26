@@ -69,7 +69,7 @@ function photoStep(err) {
   const body = form.photo
     ? h("div", { class: "photo-prev" }, h("img", { src: form.photoURL, alt: t("Your photo"), width: 640, height: 400, class: fresh.photo ? "pop" : null }),
         h("div", { class: "photo-meta" }, h("span", { class: "muted", text: form.photoInfo }),
-          form.demo && prefs().demo ? h("button", { type: "button", class: "link-btn", onclick: useDemoPhoto }, t("Try another demo photo")) : null,
+          form.demo ? h("button", { type: "button", class: "link-btn", onclick: useDemoPhoto }, t("Try another demo photo")) : null,
           h("button", { type: "button", class: "link-btn", onclick: () => { form.photo = null; form.photoURL = ""; redraw(); toast(t("Photo removed")); } }, t("Remove photo"))))
     : h("label", { for: "photo", class: "drop" + (err ? " err" : "") }, icon("camera", 32), h("b", { text: t("Take or choose a photo") }), h("span", { id: "photo-hint", class: "muted", text: t("JPG, PNG or WebP · under 15 MB · at least 200 × 200") }));
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-photo", "aria-labelledby": "h-photo" },
@@ -79,10 +79,9 @@ function photoStep(err) {
     err ? h("p", { class: "field-err", role: "alert", text: t(err) }) : null);
 }
 
-/** "Use a demo photo" in demo mode, otherwise a small link that turns demo mode on (for presenting; the complaint is then saved with the samples). */
+/** "Use a demo photo" — offered with real and demo data alike (for presenting without a camera); the complaint is labelled as demo. */
 function demoChoice(use) {
-  if (prefs().demo) return h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: use }, icon("camera", 18), t("Use a demo photo")));
-  return h("p", { class: "field-hint demo-btns" }, h("button", { type: "button", class: "link-btn", onclick: () => { setPref("demo", true); redraw(); toast(t("Demo mode on — showing sample complaints. Your own data is kept safe."), { kind: "info" }); } }, t("Presenting without a camera? Use demo photos")));
+  return h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: use }, icon("camera", 18), t("Use a demo photo")));
 }
 
 /** Demo mode: a real sample photo of the chosen problem type (or a random type), counted as taken now. */
@@ -147,7 +146,7 @@ function locStep(err) {
         form.switched ? h("p", { class: "loc-city" }, icon("info", 16), t("This spot is in {city}, so the city at the top is now {city}.", { city: cityName(form.loc.city) })) : null)
     : h("div", { class: "loc-btns" },
         h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")),
-        prefs().demo ? h("button", { type: "button", class: "btn btn-ghost", onclick: () => { form.demo = true; setLoc(DEMO_POINT); }, text: t("Use demo location (Avadi)") }) : null);
+        h("button", { type: "button", class: "btn btn-ghost", onclick: () => { form.demo = true; setLoc(DEMO_POINT); }, text: t("Use demo location (Avadi)") }));
   return h("section", { class: "card block" + (err ? " has-err" : ""), id: "sec-loc", "aria-labelledby": "h-loc" },
     h("h2", { id: "h-loc", class: "block-title", text: t("3 · Where is it?") }), body,
     near ? h("div", { class: "notice" }, icon("info", 18), h("p", {}, h("b", { text: t("Similar complaint nearby:") }), " ", t("{id} ({cat}) is {m} m away and already being handled. You can still submit if this is a different spot.", { id: near.id, cat: catName(near.cat), m: distanceM(near.lat, near.lng, form.loc.lat, form.loc.lng) }))) : null,

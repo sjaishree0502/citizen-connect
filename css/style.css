@@ -112,7 +112,10 @@ button { cursor: pointer; }
 .nav-tab.on { background: rgba(255,255,255,.16); color: #fff; }
 .nav-btn { color: #fff; border: 1px solid rgba(255,255,255,.35); margin-left: 10px; }
 .nav-btn:hover, .nav-btn.on { background: rgba(255,255,255,.12); }
-.count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--yellow); color: var(--on-yellow); font-size: 12px; font-weight: 800; text-align: center; }
+.count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: rgba(255,255,255,.18); color: #fff; font-size: 12px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.count.attn { background: var(--yellow); color: var(--on-yellow); } /* some complaints need my check */
+.menu-item .count { background: var(--raised); color: var(--ink); }
+.menu-item .count.attn { background: var(--yellow); color: var(--on-yellow); }
 
 /* ---------- footer ---------- */
 .foot { background: var(--navy-deep); color: #C9D5F5; margin-top: 24px; font-size: 14px; }

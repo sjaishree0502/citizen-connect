@@ -356,7 +356,6 @@ export default {
  "Use demo location": "மாதிரி இருப்பிடம் பயன்படுத்து",
  "Demo mode: a sample photo or location was used.": "டெமோ பயன்முறை: மாதிரிப் புகைப்படம் அல்லது இருப்பிடம் பயன்படுத்தப்பட்டது.",
  "Try another demo photo": "வேறு மாதிரிப் புகைப்படம்",
- "Presenting without a camera? Use demo photos": "கேமரா இல்லாமல் காட்சிப்படுத்துகிறீர்களா? மாதிரிப் புகைப்படங்களைப் பயன்படுத்துங்கள்",
  "Menu": "பட்டியல்",
  "Demo mode": "டெமோ பயன்முறை",
  "Every complaint, photo and the officer PIN": "எல்லாப் புகார்கள், புகைப்படங்கள் மற்றும் அதிகாரி PIN",
@@ -384,5 +383,6 @@ export default {
  "Showing complaints in {city}": "{city} பகுதியின் புகார்கள் காட்டப்படுகின்றன",
  "Officer mode": "அதிகாரி பயன்முறை",
  "This spot is in {city} — switched the city to {city}": "இந்த இடம் {city} பகுதியில் உள்ளது — நகரம் {city} என மாற்றப்பட்டது",
- "This spot is in {city}, so the city at the top is now {city}.": "இந்த இடம் {city} பகுதியில் உள்ளது, எனவே மேலே உள்ள நகரம் இப்போது {city}."
+ "This spot is in {city}, so the city at the top is now {city}.": "இந்த இடம் {city} பகுதியில் உள்ளது, எனவே மேலே உள்ள நகரம் இப்போது {city}.",
+ "{n} complaints": "{n} புகார்கள்"
 };

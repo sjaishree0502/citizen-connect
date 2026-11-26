@@ -3,7 +3,7 @@
 // shown next to the first photo; "Reopen" sends it back to the officer with a reason.
 
 import { h, icon, toast, param, shortDate, distanceM } from "../helpers.js";
-import { t, lang, catName, ago, prefs } from "../i18n.js";
+import { t, lang, catName, ago } from "../i18n.js";
 import { boot } from "../layout.js";
 import * as store from "../store.js";
 import { checkReason, checkLocation, LIMITS } from "../validate.js";
@@ -122,16 +122,16 @@ function decide(c) {
     h("p", { class: "muted", text: t("Only you can close this complaint. Go to the spot and take a new photo — it is kept as proof next to your first photo.") }),
     h("div", { class: "field" + (errs.photo ? " has-err" : "") }, h("p", { class: "field-label", text: t("New photo at the spot") }), input,
       res.url ? h("div", { class: "photo-meta" }, h("span", { class: "muted", text: (res.demo ? t("Demo photo") + " · " : "") + t("Taken {when} · shown next to your first photo", { when: shortDate(new Date(res.takenAt).toISOString(), lang()) }) }),
-          res.demo && prefs().demo ? h("button", { type: "button", class: "link-btn", onclick: () => useDemoPhoto(c), text: t("Try another demo photo") }) : null,
+          res.demo ? h("button", { type: "button", class: "link-btn", onclick: () => useDemoPhoto(c), text: t("Try another demo photo") }) : null,
           h("button", { type: "button", class: "link-btn", onclick: () => { URL.revokeObjectURL(res.url); Object.assign(res, { blob: null, url: "", takenAt: null, demo: false, path: "" }); redraw(); }, text: t("Retake photo") }))
         : h("label", { for: "after", class: "drop" + (errs.photo ? " err" : "") }, icon("camera", 28), h("b", { text: t("Take a new photo") })),
       // Demo photos only for the sample complaints: a real complaint is closed only with a real photo.
-      !res.url && prefs().demo ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: () => useDemoPhoto(c) }, icon("camera", 18), t("Use a demo photo"))) : null,
+      !res.url ? h("div", { class: "loc-btns demo-btns" }, h("button", { type: "button", class: "btn btn-ghost", onclick: () => useDemoPhoto(c) }, icon("camera", 18), t("Use a demo photo"))) : null,
       errs.photo ? h("p", { class: "field-err", role: "alert", text: errs.photo }) : null),
     h("div", { class: "field" + (errs.loc ? " has-err" : "") }, h("p", { class: "field-label", text: t("Where did you take it?") }),
       res.loc ? h("p", { class: "match " + (dist <= 50 ? "ok" : "far") }, icon(dist <= 50 ? "check" : "info", 18), t("{d} m from your first pin", { d: dist }) + ` · ${t("accuracy {m} m", { m: res.loc.acc })}`)
         : h("div", { class: "loc-btns" }, h("button", { type: "button", class: "btn btn-primary", disabled: locating || null, onclick: locate }, icon("pin", 18), locating ? t("Finding you…") : t("Use my location")),
-            prefs().demo ? h("button", { type: "button", class: "btn btn-ghost", onclick: () => { res.demo = true; setLoc({ lat: c.lat + 0.00008, lng: c.lng + 0.00005, acc: 10 }); }, text: t("Use demo location") }) : null),
+            h("button", { type: "button", class: "btn btn-ghost", onclick: () => { res.demo = true; setLoc({ lat: c.lat + 0.00008, lng: c.lng + 0.00005, acc: 10 }); }, text: t("Use demo location") })),
       errs.loc ? h("p", { class: "field-err", role: "alert", text: errs.loc }) : null),
     h("div", { class: c.status === "Fixed" ? "two" : "" },
       h("button", { type: "button", class: "btn btn-green btn-lg" + (c.status === "Fixed" ? "" : " btn-block") + (saving ? " is-busy" : ""), disabled: saving || null, onclick: () => resolve(c) }, saving ? h("span", { class: "spinner" }) : icon("check", 20), t("Mark resolved")),

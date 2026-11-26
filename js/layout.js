@@ -137,7 +137,7 @@ function header(active, officerPage, rerender) {
         { content: icon("sun", 16), aria: t("Light theme"), on: !dark, onclick: () => { setPref("theme", "light"); applyTheme(); rerender(true); } },
         { content: icon("moon", 16), aria: t("Dark theme"), on: dark, onclick: () => { setPref("theme", "dark"); applyTheme(); rerender(true); } },
       ]))));
-  const need = store.myTabs().check;
+  const { all: mineCount, check: need } = store.myTabs();
   const tab = (href, key, label, extra) => h("a", { href, class: "nav-tab" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null }, label, extra);
   const nav = officerPage
     ? h("nav", { class: "nav nav-officer", "aria-label": t("Officer") },
@@ -146,9 +146,9 @@ function header(active, officerPage, rerender) {
     : h("nav", { class: "nav", "aria-label": t("Main") },
         tab("index.html", "home", t("Home")),
         tab("raise.html", "raise", t("Raise a complaint")),
-        tab("my.html", "my", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
+        tab("my.html", "my", t("My complaints"), myCount(mineCount, need)),
         h("a", { href: isOfficer() ? "officer.html" : "login.html", class: "nav-btn" + (active === "login" ? " on" : "") }, icon("shield", 16), t("Officer login")));
-  const menu = phoneMenu(active, officerPage, need);
+  const menu = phoneMenu(active, officerPage, need, myCount(mineCount, need));
   const main = h("header", { class: "head" }, h("div", { class: "wrap head-in" }, brand(), nav, menu.btn), menu.panel);
   const demo = p.demo ? h("div", { class: "demo-strip", role: "status" }, h("div", { class: "wrap" }, icon("info", 16),
     h("span", { class: "demo-text", text: t("Demo mode — showing sample complaints. Your own are safe and come back when you turn it off.") }),
@@ -157,7 +157,14 @@ function header(active, officerPage, rerender) {
 }
 
 /** Hamburger button + drop-down panel for phones and small tablets (the desktop nav hides there). */
-function phoneMenu(active, officerPage, need) {
+/** Number of my complaints (in the chosen city) for the "My complaints" pill; yellow when some need my check. */
+function myCount(total, need) {
+  if (!total) return null;
+  const label = t("{n} complaints", { n: total }) + (need ? " · " + t("{n} need your check", { n: need }) : "");
+  return h("span", { class: "count" + (need ? " attn" : ""), "aria-label": label, title: label, text: total });
+}
+
+function phoneMenu(active, officerPage, need, count) {
   const row = (ico, label, extra) => [h("span", { class: "menu-ico" }, icon(ico, 20)), h("span", { class: "menu-label", text: label }), extra || icon("arrow", 16)];
   const link = (href, key, ico, label, extra) => h("a", { href, class: "menu-item" + (active === key ? " on" : ""), "aria-current": active === key ? "page" : null }, row(ico, label, extra));
   const items = officerPage
@@ -166,7 +173,7 @@ function phoneMenu(active, officerPage, need) {
        h("button", { type: "button", class: "menu-item", onclick: () => { setOfficer(false); location.href = "index.html"; } }, row("out", t("Sign out")))]
     : [link("index.html", "home", "home", t("Home")),
        link("raise.html", "raise", "plus", t("Raise a complaint")),
-       link("my.html", "my", "list", t("My complaints"), need ? h("span", { class: "count", "aria-label": t("{n} need your check", { n: need }), text: need }) : null),
+       link("my.html", "my", "list", t("My complaints"), count),
        h("hr", { class: "menu-sep" }),
        isOfficer() ? link("officer.html", "officer", "grid", t("Officer dashboard")) : link("login.html", "login", "shield", t("Officer login"))];
   const panel = h("nav", { id: "site-menu", class: "menu", "aria-label": t("Menu"), hidden: true }, h("div", { class: "wrap menu-in" }, items));
